@@ -15,7 +15,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # Use the PAT to allow the workflow to push changes
+          # Use the PAT (GH_TOKEN) to allow the workflow to push changes
           token: ${{ secrets.GH_TOKEN }}
 
       - name: Set up Python
@@ -25,6 +25,11 @@ jobs:
 
       - name: Install dependencies
         run: pip install -r requirements.txt
+
+      - name: Create Data Directories
+        run: |
+          mkdir -p data/raw
+          mkdir -p data/verified
 
       - name: Run Scraper
         # The scraping script saves to data/raw/
