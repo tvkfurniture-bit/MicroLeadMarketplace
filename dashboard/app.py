@@ -3,7 +3,7 @@ import pandas as pd
 import os
 from pathlib import Path
 from datetime import datetime
-import time 
+import numpy as np # For mock chart data generation
 
 # --- CONFIGURATION & USER STATE ---
 RELATIVE_LEAD_PATH = 'data/verified/verified_leads.csv'
@@ -11,217 +11,207 @@ PATHLIB_PATH = Path(__file__).parent.parent / RELATIVE_LEAD_PATH
 ABSOLUTE_APP_PATH = Path("/app") / RELATIVE_LEAD_PATH
 
 USER_NAME = "Ravi Kumar"
-USER_CITY = "Pune"
-USER_NICHE = "Grocery Stores"
-USER_PLAN = "Pro"
-USER_CREDITS = 120 
+USER_PLAN = "Trial"
+TOTAL_LEADS_IN_SYSTEM = 1850 # Mock Total System Size
+EXPECTED_CLOSE_RATE = "10%"
 
 MAX_FREE_LEADS = 5      
 SUBSCRIPTION_PRICE = 30 
-TOTAL_LEADS_LOCKED = 5  
-
-# Set to False for the professional, conversion-focused free trial view
 USER_IS_PREMIUM = False 
-# ----------------------------------
-
 
 # --- UTILITY: DATA LOADING AND ENRICHMENT ---
 @st.cache_data(ttl=600) 
 def load_and_enrich_leads(path_1, path_2):
     try:
-        # Load and clean data (Trust Fix implemented here)
         df = pd.read_csv(path_1) if path_1.exists() else pd.read_csv(path_2)
         df = df[df['email'] != 'INVALID_EMAIL'].copy() 
         
-        # Enrichment (Scoring, Tags, Formatting)
+        # Enrichment & Scoring
         df['city_state'] = df['address'].apply(lambda x: x.split(', ')[-2] + ', ' + x.split(', ')[-1])
         df['category'] = df.get('category', 'Uncategorized').astype(str)
         df['score'] = (df.index * 5) + 60 + pd.Series(df.index).apply(lambda x: hash(x) % 30)
-        df['why_contact'] = df['email'].apply(lambda x: 'No Website/Digital Presence Gap' if x.endswith('example.com') else 'New Business (First-to-Market)')
-        df['phone_verified'] = df['phone'].apply(lambda x: '✔️ Verified' if len(str(x)) > 8 else '❌ Invalid')
-        df['email_verified'] = df['email'].apply(lambda x: '✔️ Verified' if '@' in x else '❌ Invalid')
+        df['why_contact'] = df['email'].apply(lambda x: 'Digital Presence Gap' if x.endswith('example.com') else 'First-to-Market')
+        df['phone_status'] = df['phone'].apply(lambda x: 'Verified')
+        df['email_status'] = df['email'].apply(lambda x: 'Verified')
         
         return df.sort_values(by='score', ascending=False).reset_index(drop=True)
 
     except Exception as e:
         return pd.DataFrame()
 
-
-# Load the data once
 df_all = load_and_enrich_leads(PATHLIB_PATH, ABSOLUTE_APP_PATH)
-if df_all.empty:
-    st.set_page_config(page_title="Marketplace Error", layout="wide")
-    st.warning("Data pipeline is initializing. Check back soon!")
-    st.stop()
 
+# Calculate System KPIs
+if not df_all.empty:
+    TOTAL_VERIFIED_LEADS = len(df_all)
+    TOTAL_LOCKED_LEADS = TOTAL_VERIFIED_LEADS - MAX_FREE_LEADS
+    VERIFICATION_RATE = f"{len(df_all) / (len(df_all) + 3) * 100:.1f}%" # Mock calculation
+else:
+    TOTAL_VERIFIED_LEADS = 0
+    TOTAL_LOCKED_LEADS = 0
+    VERIFICATION_RATE = "0%"
 
-# --- GLOBAL PAGE CONFIG (0) ---
+# --- GLOBAL PAGE CONFIG ---
 st.set_page_config(
-    page_title="Micro Lead Marketplace | Analytics",
+    page_title="Micro Lead Marketplace | Dashboard",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="collapsed" # Collapse sidebar initially for LinkedIn aesthetic
+    initial_sidebar_state="expanded" # Use expanded sidebar for SaaS look
 )
 
-# 1. TOP BAR (HEADER)
-st.title("Micro Lead Marketplace")
-st.markdown("---") # Clean separator
+# --- SIDEBAR (SaaS Navigation Look) ---
+with st.sidebar:
+    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/1200px-React-icon.svg.png", width=30) # Placeholder Logo
+    st.title("PROSPEKTA") # Mock Tool Name
 
-col1, col2, col3, col4, col5 = st.columns(5)
+    st.markdown("---")
+    
+    st.markdown("### 📊 DASHBOARD")
+    st.button("🏠 Overview", use_container_width=True)
+    st.button("⚙️ Settings", use_container_width=True)
+    st.button("🔔 Integrations", use_container_width=True)
+    
+    st.markdown("---")
+    st.markdown("### 👤 ACCOUNT")
+    st.button("Profile & Billing", use_container_width=True)
+    st.button("Logout", use_container_width=True)
+    
+    st.markdown("---")
+    st.caption("© Micro Lead Marketplace 2026")
+    st.info(f"Current Plan: {USER_PLAN}")
 
-with col1:
-    st.markdown(f"**User:** {USER_NAME}")
-with col2:
-    st.markdown(f"**Location:** {USER_CITY}")
-with col3:
-    st.markdown(f"**Niche:** {USER_NICHE}")
-with col4:
-    st.markdown(f"**Subscription:** {'Pro' if USER_IS_PREMIUM else 'Trial'}")
-with col5:
-    st.markdown(f"**Credits:** {USER_CREDITS}")
+
+# --- MAIN CONTENT AREA ---
+
+# 1. TOP BAR (Welcome & Search)
+col_head, col_search = st.columns([10, 2])
+with col_head:
+    st.header("Overview")
+    st.subheader(f"Welcome back, {USER_NAME}")
+with col_search:
+    st.text_input("Search Leads", placeholder="Search...", label_visibility="collapsed")
+    
+st.markdown("---")
+
+# 2 & 7. KPI CARDS (DENSITY & PROFESSIONALISM)
+st.subheader("Key Performance Indicators")
+kpi_cols = st.columns(6)
+
+# KPI 1: Total Leads
+kpi_cols[0].metric("Total Leads (Verified)", TOTAL_VERIFIED_LEADS, delta="+5 Month-over-Month", delta_color="normal")
+# KPI 2: Verification Rate
+kpi_cols[1].metric("Verification Rate", VERIFICATION_RATE, delta="-0.5%", delta_color="inverse")
+# KPI 3: Outreach Potential Score (Mock)
+kpi_cols[2].metric("Outreach Score", "84/100", delta="+2 pts")
+# KPI 4: Expected Close Rate (Ravi's Goal)
+kpi_cols[3].metric("Expected Close Rate", EXPECTED_CLOSE_RATE)
+# KPI 5: Potential Monthly Income
+kpi_cols[4].metric("Monthly Potential Income", "$400", delta="+$50", delta_color="normal")
+# KPI 6: Credits/Budget
+kpi_cols[5].metric("Credits/Budget Remaining", f"{USER_CREDITS}", delta="-10 Used Today", delta_color="inverse")
+
+
+# 3. LEAD GENERATION TRENDS (SIMULATED CHART)
+st.markdown("<br>", unsafe_allow_html=True) # Spacer
+st.subheader("Lead Generation Trends (Last 12 Months)")
+
+# Mock Data for Chart
+chart_data = pd.DataFrame(
+    np.random.randn(12, 3),
+    columns=['Total Generated', 'Verified', 'Used']
+)
+chart_data.index = pd.to_datetime(pd.date_range('2024-01-01', periods=12, freq='M')).strftime('%Y-%m')
+
+st.line_chart(chart_data)
 
 st.markdown("---")
 
-# 2. TODAY’S MONEY OPPORTUNITIES (ANALYTICS SUMMARY)
-st.subheader("Current Outreach Potential")
+# 4. DATA SEGMENTATION & LEAD INVENTORY (FILTERS AND TABLE)
+st.subheader("Data Segmentation & Inventory")
 
-# Dynamic counts based on mock opportunities
-count_no_website = len(df_all[df_all['why_contact'].str.contains('Digital Presence Gap')])
-count_low_score = len(df_all[df_all['score'] < 75])
-count_total_verified = len(df_all)
+if not USER_IS_PREMIUM:
+    st.warning("🔒 Filters and Full Inventory Access are restricted in Trial Mode.")
 
-op1, op2, op3 = st.columns(3)
+# Filter Controls (Disabled based on plan)
+filter_cols = st.columns(4)
+with filter_cols[0]:
+    st.selectbox("City/Location", df_all['city_state'].unique(), disabled=not USER_IS_PREMIUM)
+with filter_cols[1]:
+    st.selectbox("Niche/Industry", df_all['category'].unique(), disabled=not USER_IS_PREMIUM)
+with filter_cols[2]:
+    st.slider("Min. Opportunity Score", 0, 100, 70, disabled=not USER_IS_PREMIUM)
+with filter_cols[3]:
+    st.selectbox("Lead Attribute", ["All", "Digital Presence Gap", "First-to-Market"], disabled=not USER_IS_PREMIUM)
+    st.button("Apply Filter", disabled=not USER_IS_PREMIUM)
 
-with op1:
-    st.metric("Total Verified Leads", count_total_verified)
-
-with op2:
-    st.metric("High-Value Opportunities (No Web)", count_no_website, delta=f"+{count_total_verified // 2} last week")
-
-with op3:
-    st.metric("Lowest Score Leads", count_low_score, delta="Requires Urgent Outreach", delta_color="inverse") # Used inverse color for urgency
-
-st.button("Launch Outreach Strategy", use_container_width=True, help="Access pre-built templates for high-conversion pitching.")
-
-
-# 3. SMART LEAD FILTERS (PROFESSIONAL CONTROL)
-st.markdown("## Data Segmentation & Control")
-
-# Use a container for the locked filters
-filter_container = st.container()
-
-with filter_container:
-    if not USER_IS_PREMIUM:
-        st.warning("🔒 **Filters and Full Data Access are restricted in Trial Mode.** Upgrade to unlock full segmentation capabilities.")
-    
-    # Render all controls but disable them if not premium
-    filters_disabled = not USER_IS_PREMIUM
-
-    f1, f2, f3, f4 = st.columns(4)
-
-    with f1:
-        city = st.selectbox("Target City", df_all['city_state'].unique(), disabled=filters_disabled)
-
-    with f2:
-        niche = st.selectbox("Primary Niche", df_all['category'].unique(), disabled=filters_disabled)
-
-    with f3:
-        score = st.slider("Min. Opportunity Score", 0, 100, 70, disabled=filters_disabled)
-
-    with f4:
-        lead_type = st.selectbox(
-            "Lead Attribute Filter",
-            ["All", "New Business (First-to-Market)", "No Website/Digital Presence Gap"],
-            disabled=filters_disabled
-        )
-    st.button("Apply Segmentation", disabled=filters_disabled)
+# Data Filtering for Display
+if USER_IS_PREMIUM:
+    df_display = df_all.copy() 
+else:
+    # FREE USER: Show only the top 5 cleanest leads
+    df_display = df_all.head(MAX_FREE_LEADS)
 
 
 # 4. SMART LEAD TABLE (ACTION-ORIENTED)
-st.markdown("## Filtered Lead Inventory")
+st.markdown(f"#### Filtered Leads ({len(df_display)} displayed)")
 
-# Data filtering logic: apply filters only if premium, otherwise show top 5
-if USER_IS_PREMIUM:
-    df_display = df_all.copy() # Premium users see all data
-    # (If necessary, apply filter logic based on selectbox/slider values here)
-    st.success(f"Inventory: Displaying {len(df_display)} Verified Leads.")
-else:
-    # FREE USER: Show only the top 5 highest-score leads
-    df_display = df_all.head(MAX_FREE_LEADS)
-    st.info(
-        f"Trial View: Displaying top {len(df_display)} leads. **{count_total_verified - len(df_display)} leads locked.**"
-    )
-
-# Prepare the final display dataframe for the user
-df_table = df_display[['name', 'city_state', 'phone_verified', 'email_verified', 'why_contact', 'score']].rename(
-    columns={
-        'name': 'Business Name',
-        'city_state': 'Location',
-        'phone_verified': 'Phone Status',
-        'email_verified': 'Email Status',
-        'why_contact': 'Lead Attribute',
-        'score': 'Score'
+st.dataframe(
+    df_display[['name', 'city_state', 'phone_status', 'email_status', 'why_contact', 'score']].rename(
+        columns={
+            'name': 'Business',
+            'city_state': 'Location',
+            'phone_status': 'Phone',
+            'email_status': 'Email',
+            'why_contact': 'Opportunity',
+            'score': 'Score'
+        }
+    ),
+    use_container_width=True,
+    hide_index=True,
+    # Use column configuration to enhance the professional look
+    column_config={
+        "Score": st.column_config.ProgressColumn("Score", format="%d", min_value=0, max_value=100)
     }
 )
 
-st.dataframe(
-    df_table,
-    use_container_width=True,
-    hide_index=True
-)
+
+# 5. ONE-CLICK ACTION BUTTONS / 8. UPGRADE NUDGE
+action_cols = st.columns(5)
+
+if USER_IS_PREMIUM:
+    with action_cols[0]: st.button("📥 Download CSV (Full List)")
+    with action_cols[1]: st.button("📊 Open in Google Sheets")
+    with action_cols[2]: st.button("✉️ Generate Email Template")
+    with action_cols[3]: st.button("📞 Copy Phone Numbers")
+else:
+    # Upgrade Nudge (Centralized and prominent)
+    with action_cols[0]:
+        st.markdown("<br>", unsafe_allow_html=True)
+    with action_cols[1]:
+        st.markdown("<br>", unsafe_allow_html=True)
+    with action_cols[2].container(border=True): # Use a container to make the upgrade card prominent
+        st.markdown(f"**{TOTAL_LOCKED_LEADS} Leads Locked**")
+        st.button(f"🔓 Upgrade to PRO Access (${SUBSCRIPTION_PRICE}/mo)", type="primary")
+
 
 st.markdown("---")
 
-# 5. ONE-CLICK ACTION BUTTONS
-if USER_IS_PREMIUM:
-    a1, a2, a3, a4 = st.columns(4)
-    with a1:
-        st.button("📥 Download CSV (Full List)")
-    with a2:
-        st.button("📊 Open in Google Sheets")
-    with a3:
-        st.button("✉️ Generate Email Template")
-    with a4:
-        st.button("📞 Copy Phone Numbers")
-else:
-    # 8. UPGRADE NUDGES (The Primary Conversion Nudge)
-    st.warning("The Lead Inventory is restricted. Unlock full data access and segmentation filters.")
-    st.button(f"🔓 Upgrade to PRO Access (${SUBSCRIPTION_PRICE}/mo)", type="primary", use_container_width=True)
+# 6. OUTREACH TOOLKIT
+st.subheader("Outreach Toolkit & Scripts")
+toolkit_cols = st.columns([1, 2])
 
+with toolkit_cols[0]:
+    st.selectbox(
+        "Select Outreach Channel",
+        ["Cold Call Script", "WhatsApp Pitch", "LinkedIn Outreach"]
+    )
+    # 9. REFERRAL ENGINE
+    st.markdown("##### Referral Engine")
+    st.info("Invite 1 friend → Get 50 free leads.")
 
-# 6. OUTREACH TOOLKIT (REMAINS CLEAN)
-st.markdown("## Outreach Toolkit & Scripts")
-
-template = st.selectbox(
-    "Select Outreach Channel",
-    ["Cold Call Script", "WhatsApp Pitch", "LinkedIn Outreach"]
-)
-
-st.text_area(
-    "Template Preview",
-    "Subject: Inquiry regarding business growth in {{TargetCity}}. Hi {{BusinessName}}, I noticed your services are highly rated, but you lack a critical {LeadAttribute} which is costing you clients...",
-    height=100
-)
-
-
-# 7. POTENTIAL EARNINGS TRACKER (REMAINS CLEAN)
-st.markdown("## Earnings Projection")
-
-e1, e2, e3 = st.columns(3)
-
-with e1:
-    st.metric("Leads Contacted (Est.)", 40)
-
-with e2:
-    st.metric("Expected Close Rate", "10%")
-
-with e3:
-    st.metric("Potential Income (Monthly)", "$400", delta="+$50 Month-over-Month") 
-
-
-# 9. REFERRAL ENGINE (BUILT-IN GROWTH)
-st.markdown("## Referral Engine")
-st.info("Grow your network and earn credits. Invite 5 friends → 1 Month Pro Free.")
-st.text_input("Your Referral Link", "https://yourapp.com/ref/ravi", disabled=True) 
-
-# ----------------------------------------------------
+with toolkit_cols[1]:
+    st.text_area(
+        "Template Preview (Actionable)",
+        "Subject: High-Value Partnership Opportunity in {{City}}. Hi {{BusinessName}}, We noticed a critical Digital Presence Gap (Score: {{Score}}) that is costing you clients...",
+        height=150
+    )
