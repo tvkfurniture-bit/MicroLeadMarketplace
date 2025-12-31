@@ -1,0 +1,10 @@
+name,category,address,phone,email,source_url,scraped_date
+Business Alpha 1,HVAC Services,"10 Main St, Dallas, Texas",555-123-1001,test.alpha1@example.com,http://source.com/lead_1,2025-12-31 11:16:35
+Business Alpha 2,HVAC Services,"20 Main St, Dallas, Texas",555-123-1002,test.alpha2@example.com,http://source.com/lead_2,2025-12-31 11:16:35
+Business Alpha 3,HVAC Services,"30 Main St, Dallas, Texas",555-123-1003,INVALID_EMAIL,http://source.com/lead_3,2025-12-31 11:16:35
+Business Alpha 4,HVAC Services,"40 Main St, Dallas, Texas",555-123-1004,test.alpha4@example.com,http://source.com/lead_4,2025-12-31 11:16:36
+Business Alpha 5,HVAC Services,"50 Main St, Dallas, Texas",555-123-1005,test.alpha5@example.com,http://source.com/lead_5,2025-12-31 11:16:36
+Business Alpha 6,HVAC Services,"60 Main St, Dallas, Texas",555-123-1006,INVALID_EMAIL,http://source.com/lead_6,2025-12-31 11:16:37
+Business Alpha 7,HVAC Services,"70 Main St, Dallas, Texas",555-123-1007,test.alpha7@example.com,http://source.com/lead_7,2025-12-31 11:16:37
+Business Alpha 8,HVAC Services,"80 Main St, Dallas, Texas",555-123-1008,test.alpha8@example.com,http://source.com/lead_8,2025-12-31 11:16:37
+Business Alpha 9,HVAC Services,"90 Main St, Dallas, Texas",555-123-1009,INVALID_EMAIL,http://source.com/lead_9,2025-12-31 11:16:38
