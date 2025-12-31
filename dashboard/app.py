@@ -1,18 +1,20 @@
 import streamlit as st
 import pandas as pd
 import os
-# >>> ADD PATHLIB IMPORT FOR ROBUST FILE PATHS
 from pathlib import Path
 
 # --- Configuration ---
-
 # 1. Define the relative path to the file
 RELATIVE_LEAD_PATH = 'data/verified/verified_leads.csv'
 
-# 2. Construct the ABSOLUTE path relative to the app.py script's location.
-# Path(__file__).parent is the 'dashboard' directory.
-# .parent again moves up to the project root 'MicroLeadMarketplace'.
-LEAD_FILE_PATH = Path(__file__).parent.parent / RELATIVE_LEAD_PATH
+# 2. Try 1: Robust Pathlib relative to the script location (The correct standard way)
+# Finds the project root by moving two directories up from app.py
+PATHLIB_PATH = Path(__file__).parent.parent / RELATIVE_LEAD_PATH
+
+# 3. Try 2: Absolute Path (The Streamlit deployment fail-safe)
+# Assumes the Streamlit deployment root is '/app'
+ABSOLUTE_APP_PATH = Path("/app") / RELATIVE_LEAD_PATH
+
 
 # Set up page config
 st.set_page_config(
@@ -21,36 +23,45 @@ st.set_page_config(
 )
 
 # Use Streamlit's caching feature for fast performance
-# Note: We now pass the Path object, not just a string
 @st.cache_data(ttl=600) 
-def load_leads(path_object):
-    """Load the verified leads CSV file using the robust Path object."""
+def load_leads(path_1, path_2):
+    """Loads the CSV, checking the most likely paths in the Streamlit environment."""
     
-    # Check if the Path object exists (more reliable check)
-    if not path_object.exists():
-        st.error(f"Error: Lead data file not found at {path_object}. Please ensure the GitHub Action ran successfully.")
+    # Check 1: Try the Pathlib relative path
+    if path_1.exists():
+        st.success(f"Loaded data successfully from standard path: {path_1}")
+        return pd.read_csv(path_1)
+    
+    # Check 2: Try the hardcoded Streamlit absolute path (/app)
+    elif path_2.exists():
+        st.success(f"Loaded data successfully from Streamlit root path: {path_2}")
+        return pd.read_csv(path_2)
+
+    # If both fail, display error
+    else:
+        st.error(
+            f"Error: Lead data file not found at either location."
+            f" (Checked: {path_1} and {path_2}). "
+            f"Please confirm file existence in GitHub repo."
+        )
         return pd.DataFrame()
-    
-    # Read the CSV file
-    return pd.read_csv(path_object)
 
 # --- Dashboard UI ---
 st.title("🥇 The Micro Lead Marketplace")
 st.markdown("### Verified, hyperlocal B2B leads, refreshed weekly.")
 
-# >>> PASS THE ROBUST PATH OBJECT TO THE LOADER
-df = load_leads(LEAD_FILE_PATH)
+# >>> PASS BOTH PATHS TO THE LOADER
+df = load_leads(PATHLIB_PATH, ABSOLUTE_APP_PATH)
 
 if not df.empty:
     st.sidebar.header("Filter Leads (Premium Feature)")
 
-    # Filter 1: Niche
     # Ensure all category names are treated as strings to avoid filtering errors
     df['category'] = df['category'].astype(str)
     unique_niches = df['category'].unique()
     
-    # Handle the case where the first category might be 'nan' if data is slightly messy
-    default_niche = unique_niches[0] if len(unique_niches) > 0 and pd.notna(unique_niches[0]) else []
+    # Handle initial default selection
+    default_niche = [n for n in unique_niches if pd.notna(n)][0] if len(unique_niches) > 0 and pd.notna(unique_niches[0]) else []
 
     selected_niche = st.sidebar.multiselect(
         "Select Industry Niche",
@@ -79,4 +90,5 @@ if not df.empty:
     st.info(f"Last updated: {df['scraped_date'].max()}")
 
 else:
+    # This warning only shows if load_leads returns an empty DataFrame
     st.warning("The lead pipeline is running or the first data pull is pending. Check back soon!")
