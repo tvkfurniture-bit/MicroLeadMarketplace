@@ -12,7 +12,6 @@ st.set_page_config(
 )
 
 # Use Streamlit's caching feature for fast performance
-# It automatically re-runs if the underlying CSV file changes
 @st.cache_data(ttl=600) 
 def load_leads(path):
     """Load the verified leads CSV file."""
@@ -20,12 +19,6 @@ def load_leads(path):
         st.error("Lead data file not found. Pipeline may not have run yet.")
         return pd.DataFrame()
     return pd.read_csv(path)
-
-# --- Monetization MOCK (V1) ---
-# In V2, this checks a real user database (Supabase/Auth0)
-def check_subscription_status(user_id):
-    # MVP: Assume user is subscribed if they successfully logged in
-    return True # Replace with real subscription check
 
 # --- Dashboard UI ---
 st.title("🥇 The Micro Lead Marketplace")
@@ -46,9 +39,6 @@ if not df.empty:
     
     df_filtered = df[df['category'].isin(selected_niche)]
 
-    # Filter 2: Location (Add a location column and filter here in V2)
-    # st.sidebar.text("Location filter coming soon!")
-    
     st.subheader(f"Available Leads ({len(df_filtered)} matching your filter)")
 
     # Display the data table
