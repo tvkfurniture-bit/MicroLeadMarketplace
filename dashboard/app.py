@@ -14,7 +14,7 @@ ABSOLUTE_APP_PATH = Path("/app") / RELATIVE_LEAD_PATH
 
 # Ravi's Requirements from the story
 MAX_FREE_LEADS = 5 # Reduced to 5 to increase scarcity!
-SUBSCRIPTION_PRICE = 30 
+SUBSCRIPTION_PRICE = 10 
 
 # --- SIMULATED USER STATE ---
 USER_IS_PREMIUM = False # <-- Defaulting to non-paid user for conversion funnel demo
