@@ -2,10 +2,8 @@
 pandas
 requests
 PyYAML
-json # Needed by Streamlit, good to keep standard utility
-re
 
-# Web Interaction (For basic mock scraping)
+# Web Interaction 
 beautifulsoup4
 
 # Dashboard
