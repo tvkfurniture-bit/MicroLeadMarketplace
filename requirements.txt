@@ -2,9 +2,11 @@
 pandas
 requests
 PyYAML
+json # Needed by Streamlit, good to keep standard utility
+re
 
-# Web Interaction (For advanced scraping, switch requests/bs4 to Playwright later)
+# Web Interaction (For basic mock scraping)
 beautifulsoup4
 
-# Dashboard (Streamlit is the fastest visualization layer)
+# Dashboard
 streamlit
