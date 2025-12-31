@@ -1,6 +1,7 @@
 import pandas as pd
 import re
 import yaml
+import os
 from datetime import datetime
 
 # --- Load Configuration ---
@@ -9,7 +10,6 @@ with open('config/config.yaml', 'r') as f:
 
 EMAIL_REGEX = config['VERIFICATION']['EMAIL_REGEX']
 MIN_PHONE_LEN = config['VERIFICATION']['MIN_PHONE_LENGTH']
-SHEET_TITLE = config['GOOGLE_SHEET']['SHEET_TITLE']
 
 def verify_data(df):
     print(f"Starting verification on {len(df)} records...")
@@ -23,10 +23,9 @@ def verify_data(df):
         lambda x: bool(re.match(EMAIL_REGEX, str(x)))
     )
     df_verified = df[df['email_verified'] == True].copy()
-    print(f"After email validation: {len(df_verified)} records remain.")
-
+    
     # 3. Phone Cleanup & Validation
-    df_verified['phone_clean'] = df_verified['phone'].str.replace(r'[^0-9]', '', regex=True)
+    df_verified['phone_clean'] = df_verified['phone'].astype(str).str.replace(r'[^0-9]', '', regex=True)
     df_verified['phone_verified'] = df_verified['phone_clean'].str.len() >= MIN_PHONE_LEN
     
     # 4. Final Output Formatting
@@ -36,36 +35,27 @@ def verify_data(df):
     df_final = df_final[['name', 'category', 'address', 'phone', 'email_raw', 'source_url', 'scraped_date']]
     df_final.rename(columns={'email_raw': 'email'}, inplace=True)
     
+    print(f"Final verified lead count: {len(df_final)}")
     return df_final
-
-def deliver_to_sheets(df):
-    """MOCK: In a real environment, this connects to gspread and updates the Sheet."""
-    print("MOCK: Connecting to Google Sheets API via stored credentials...")
-    
-    # --- Integration Code Placeholder ---
-    # import gspread
-    # gc = gspread.service_account(filename=config['GOOGLE_SHEET']['CREDENTIALS_FILE'])
-    # sh = gc.open(SHEET_TITLE)
-    # worksheet = sh.sheet1
-    # worksheet.clear()
-    # worksheet.update([df.columns.values.tolist()] + df.values.tolist())
-    # ------------------------------------
-    
-    print(f"MOCK: Successfully updated Google Sheet '{SHEET_TITLE}' with {len(df)} leads.")
 
 if __name__ == "__main__":
     try:
+        # Ensure the raw directory exists
+        if not os.path.exists('data/raw/latest_raw_scrape.csv'):
+            raise FileNotFoundError("Raw scrape file missing. Run scrape_sources.py first.")
+            
         df_raw = pd.read_csv('data/raw/latest_raw_scrape.csv')
-    except FileNotFoundError:
-        print("Error: Raw scrape file not found. Run scrape_sources.py first.")
+        
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
         exit()
         
     df_clean = verify_data(df_raw)
     
-    # 5. Save the FINAL verified product (The core business asset)
+    # Ensure the verified directory exists
+    os.makedirs('data/verified', exist_ok=True)
+    
+    # Save the FINAL verified product (The core business asset for Streamlit)
     output_path = 'data/verified/verified_leads.csv'
     df_clean.to_csv(output_path, index=False)
-    print(f"Saved verified leads to {output_path}. Ready for dashboard use.")
-    
-    # Optional: Deliver_to_sheets (If you choose Sheets API over Streamlit file reading)
-    # deliver_to_sheets(df_clean)
+    print(f"Successfully saved verified leads to {output_path}.")
