@@ -3,174 +3,141 @@ import pandas as pd
 import os
 from pathlib import Path
 from datetime import datetime
-import time # Used for simulating payment delay
+import time 
 
-# --- Configuration (Keep your robust paths) ---
+# --- CONFIGURATION & SUBSCRIPTION LOGIC ---
+
 RELATIVE_LEAD_PATH = 'data/verified/verified_leads.csv'
 PATHLIB_PATH = Path(__file__).parent.parent / RELATIVE_LEAD_PATH
 ABSOLUTE_APP_PATH = Path("/app") / RELATIVE_LEAD_PATH
-
-# New Path for User Orders
 REQUEST_QUEUE_PATH = Path(__file__).parent.parent / 'data/requests/order_queue.csv'
 
-# Assume AUTH succeeded for demonstration (MUST BE REPLACED WITH REAL AUTH)
-st.session_state['authenticated'] = True 
-ORDER_PRICE = 50 
+# Ravi's Requirements from the story
+MAX_FREE_LEADS = 10 
+SUBSCRIPTION_PRICE = 30 # $30/month for Unlimited
+
+# --- SIMULATED USER STATE ---
+# In a true V2, these would come from your login database (e.g., Supabase)
+USER_IS_PREMIUM = False # <-- CHANGE THIS TO TEST PREMIUM VIEW
+USER_LEADS_USED_THIS_WEEK = 0 
+# ------------------------------
 
 
-# --- Utility Functions (Path and Data Loading) ---
+# --- Utility Functions (Data Loading) ---
 
 @st.cache_data(ttl=600) 
 def load_leads(path_1, path_2):
-    # (Existing dual-path loading logic goes here)
-    if path_1.exists():
-        df = pd.read_csv(path_1)
-        # Ensure 'city_state' is generated for filtering
+    # (Existing dual-path loading logic)
+    # ... (function body remains the same, assuming it returns df or empty df) ...
+    # Simplified return for brevity, assuming your previous path logic works:
+    try:
+        if path_1.exists():
+            df = pd.read_csv(path_1)
+        elif path_2.exists():
+            df = pd.read_csv(path_2)
+        else:
+            return pd.DataFrame()
+
+        # Add necessary filtering columns
         df['city_state'] = df['address'].apply(lambda x: x.split(', ')[-2] + ', ' + x.split(', ')[-1])
         df['category'] = df['category'].astype(str)
         return df
-    elif path_2.exists():
-        df = pd.read_csv(path_2)
-        df['city_state'] = df['address'].apply(lambda x: x.split(', ')[-2] + ', ' + x.split(', ')[-1])
-        df['category'] = df['category'].astype(str)
-        return df
-    else:
-        st.error(f"Error: Lead data file not found at checked locations.")
+    except Exception as e:
+        st.error(f"Data loading failed: {e}")
         return pd.DataFrame()
 
-def save_lead_request(niche, location, max_count):
-    # This function is called AFTER simulated payment
-    new_request = pd.DataFrame({
-        'timestamp': [datetime.now().strftime('%Y-%m-%d %H:%M:%S')],
-        'niche': [niche],
-        'location': [location],
-        'max_count': [max_count],
-        'user_id': ['Ravi_example'], 
-        'status': ['PENDING_SCRAPE']
-    })
-    
-    # Check if file exists, if so, append; otherwise, create new file
-    if REQUEST_QUEUE_PATH.exists():
-        new_request.to_csv(REQUEST_QUEUE_PATH, mode='a', header=False, index=False)
-    else:
-        os.makedirs(REQUEST_QUEUE_PATH.parent, exist_ok=True) 
-        new_request.to_csv(REQUEST_QUEUE_PATH, index=False)
-        
-    return True
 
 # --- Main App Logic ---
 
-# Assuming Authentication check passed
 st.set_page_config(page_title="Micro Lead Marketplace", layout="wide")
-
 st.title("🥇 The Micro Lead Marketplace")
 st.markdown("### Verified, Hyperlocal B2B Leads, Refreshed Weekly.")
 
-# Load the data once
-df = load_leads(PATHLIB_PATH, ABSOLUTE_APP_PATH)
+# Load the entire dataset
+df_all = load_leads(PATHLIB_PATH, ABSOLUTE_APP_PATH)
 
 
-# --- SIDEBAR: ENHANCED FILTERING & ORDER FORM ---
+# --- 1. SUBSCRIPTION AND FREE TRIAL GATE ---
+df_display = df_all.copy()
+
+if not USER_IS_PREMIUM and not df_all.empty:
+    
+    # Apply the 10-lead limit for the Free Trial
+    # Ravi only sees the first 10 leads, sorted by potential value/recency
+    df_display = df_all.head(MAX_FREE_LEADS) 
+    
+    st.info(
+        f"🆓 Free Trial Active: Displaying {len(df_display)} of {len(df_all)} verified leads. "
+        f"**Upgrade to Premium ($30/mo) for UNLIMITED access.**"
+    )
+
+# --- SIDEBAR: ENHANCED FILTERING ---
 with st.sidebar:
+    st.header("1. Filter Available Leads")
     
-    st.header("1. Filter Existing Leads")
-    
-    if not df.empty:
-        # 1. Niche Filter 
-        unique_niches = df['category'].unique()
-        selected_niche = st.multiselect(
-            "Select Industry Niche",
-            options=unique_niches,
-            default=df['category'].iloc[0] if len(unique_niches) > 0 else []
-        )
-        
-        # 2. Location Filter 
-        unique_locations = df['city_state'].unique()
-        selected_location = st.multiselect(
-            "Select Location",
-            options=unique_locations,
-            default=unique_locations[0] if len(unique_locations) > 0 else []
-        )
-        
-        # Apply Filters
-        df_filtered = df[
-            (df['category'].isin(selected_niche)) &
-            (df['city_state'].isin(selected_location))
-        ]
+    if not USER_IS_PREMIUM:
+        st.error("Filtering is restricted in Free Trial.")
+        df_filtered = df_display.copy() # Free users can only "filter" the 10 they see.
     else:
-        st.warning("No leads loaded yet.")
-        df_filtered = pd.DataFrame()
-
+        # PREMIUM USER: Show full filtering capabilities
+        st.success("PREMIUM Access: Unlimited Filtering.")
+        
+        selected_niche = st.multiselect(
+            "Industry", options=df_all['category'].unique(), 
+            default=df_all['category'].iloc[0] if not df_all.empty else []
+        )
+        selected_location = st.multiselect(
+            "Location", options=df_all['city_state'].unique(),
+            default=df_all['city_state'].iloc[0] if not df_all.empty else []
+        )
+        
+        df_filtered = df_all[
+            (df_all['category'].isin(selected_niche)) &
+            (df_all['city_state'].isin(selected_location))
+        ]
 
     st.markdown("---")
-    st.header("2. Order New Leads (Premium)")
-    st.markdown("*(Pay $50 for a batch scrape targeting your specific criteria)*")
-
-    # Use a container for the form
-    with st.form("new_lead_order"):
-        niche_input = st.text_input("Industry Keyword (e.g., Hair Salon)", help="The exact phrase the scraper will search for.")
-        location_input = st.text_input("City, Country (e.g., Pune, India)", help="The physical location to target.")
-        max_leads_input = st.slider("Max Leads Desired", min_value=50, max_value=5000, step=50, value=500)
-        
-        # Simulated Payment Button
-        pay_button = st.form_submit_button(f"🔒 Place Order & Pay ${ORDER_PRICE}")
-        
-        if pay_button:
-            if niche_input and location_input:
-                
-                # --- START SIMULATED PAYMENT LOGIC ---
-                with st.spinner(f"Processing payment of ${ORDER_PRICE} securely..."):
-                    time.sleep(2) # Simulate network delay
-                
-                # --- Assume payment succeeded ---
-                
-                # Save the validated request
-                if save_lead_request(niche_input, location_input, max_leads_input):
-                    st.success(
-                        f"✅ Payment Confirmed! Order for '{niche_input} in {location_input}' submitted. "
-                        f"Leads will be scraped and available in 24-48 hours. Thank you, Ravi!"
-                    )
-                    # Force a redraw of the form area
-                    st.rerun() 
-                else:
-                    st.error("Error saving request to queue.")
-                    
-                # --- END SIMULATED PAYMENT LOGIC ---
-
-            else:
-                st.error("Please fill in both Industry Keyword and Location.")
+    # This section remains the hook for custom orders
+    st.header("2. Order New Leads")
+    st.markdown("*(Future Feature: Place custom, paid niche scrape orders)*")
+    # (Optional: Include the form from V2.1 here, but make sure it requires PREMIUM access)
 
 
 # --- MAIN DISPLAY: DATA TABLE ---
-if not df_filtered.empty:
-    st.subheader(f"Available Leads ({len(df_filtered)} matching your filter)")
+if not df_display.empty:
     
-    # Optimized Data Display (Hiding internal scrape columns like index)
+    # 50 leads available, but only 10 shown if free
+    available_count = len(df_filtered) if USER_IS_PREMIUM else len(df_display) 
+
+    st.subheader(f"Available Leads ({available_count} matching your filter)")
+    
+    # Dataframe display for Ravi: prioritized columns (Name, Location, Phone, Email)
     st.dataframe(
-        df_filtered[['name', 'category', 'city_state', 'phone', 'email', 'source_url']], 
+        df_display[['name', 'category', 'city_state', 'phone', 'email']], 
         use_container_width=True,
-        # Improve column names for user view
         column_order=('name', 'category', 'city_state', 'phone', 'email'),
         column_config={
             "city_state": st.column_config.TextColumn("Location"),
-            "source_url": st.column_config.LinkColumn("Source"),
-            "email": st.column_config.TextColumn("Email (Verified)")
+            "phone": st.column_config.TextColumn("Phone (Verified)"),
+            "email": st.column_config.TextColumn("Email (Verified)"),
         }
     )
 
-    # Download Button 
-    csv_data = df_filtered.to_csv(index=False).encode('utf-8')
-    st.download_button(
-        label=f"💾 Download {len(df_filtered)} Filtered Leads (CSV)",
-        data=csv_data,
-        file_name=f'micro_leads_{niche_input.replace(" ", "_")}.csv',
-        mime='text/csv',
-        key='download_btn',
-        help="Download is unlocked with a paid subscription."
-    )
-    
-    st.info(f"Last updated: {df['scraped_date'].max()}")
+    # Download Button Logic: Only active for premium users
+    if USER_IS_PREMIUM:
+        csv_data = df_filtered.to_csv(index=False).encode('utf-8')
+        st.download_button(
+            label=f"💾 Download ALL {len(df_filtered)} Leads (Subscription)",
+            data=csv_data,
+            file_name=f'premium_leads_{datetime.now().strftime("%Y%m%d")}.csv',
+            mime='text/csv',
+            help="Download unlimited leads with your Premium subscription."
+        )
+    else:
+        # FREE USER CTA
+        st.button("🔒 Upgrade to Download Leads ($30/mo)", type="primary")
+        
+    st.info(f"Last updated: {df_all['scraped_date'].max()}")
 
 else:
-    # This handles the case where the data file is loaded, but filters are too strict
-    st.warning("No leads match your current filter criteria. Try broadening your selection or placing a New Lead Order above.")
+    st.warning("The lead pipeline is empty. Check back after the next automated scrape.")
