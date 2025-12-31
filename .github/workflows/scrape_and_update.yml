@@ -42,11 +42,11 @@ jobs:
       - name: Commit and Push new leads
         id: commit
         run: |
-          # Check if data files changed (i.e., new leads were processed)
+          # Use GITHUB_OUTPUT environment file for state passing
           if git diff --quiet data/verified/verified_leads.csv; then
-            echo "::set-output name=commit_needed::false"
+            echo "commit_needed=false" >> $GITHUB_OUTPUT
           else
-            echo "::set-output name=commit_needed::true"
+            echo "commit_needed=true" >> $GITHUB_OUTPUT
             git config --global user.name 'github-actions[bot]'
             git config --global user.email 'github-actions[bot]@users.noreply.github.com'
             git add data/verified/verified_leads.csv
@@ -55,9 +55,11 @@ jobs:
           fi
     
       - name: Display Commit Status
-        if: steps.commit.outputs.commit_needed == 'true'
+        # New syntax for checking the output variable
+        if: steps.commit.outputs.commit_needed == 'true' 
         run: echo "Successfully committed new verified leads."
         
       - name: Display No Change Status
+        # New syntax for checking the output variable
         if: steps.commit.outputs.commit_needed == 'false'
         run: echo "No new verified leads found or data unchanged."
