@@ -1,0 +1,14 @@
+# Data Processing & Core Utilities
+pandas
+requests
+PyYAML
+
+# Web Interaction (For advanced scraping, switch requests/bs4 to Playwright later)
+beautifulsoup4
+
+# Google Sheets Integration (Crucial for lead delivery)
+gspread
+oauth2client
+
+# Dashboard (Streamlit is the fastest visualization layer)
+streamlit
