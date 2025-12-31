@@ -4,6 +4,7 @@ from bs4 import BeautifulSoup
 import time
 import random
 import yaml
+import re
 
 # --- Load Configuration ---
 with open('config/config.yaml', 'r') as f:
@@ -13,13 +14,11 @@ SCRAPE_CITY = config['SCRAPING_CONFIG']['PRIMARY_CITY']
 
 def fetch_data_from_directory(query):
     """
-    MOCK FUNCTION: In the real world, this would use Playwright/Selenium
-    to interact with Google Maps or complex directories.
-    For the MVP, we simulate scraping a simple public directory.
+    MOCK FUNCTION: Simulates pulling structured data from a source.
+    (Replace with Playwright/Selenium integration in V2.)
     """
     print(f"--- Scraping data for: {query} in {SCRAPE_CITY} ---")
     
-    # Simulate API call/Web Scrape
     scraped_leads = []
     for i in range(1, 10): 
         scraped_leads.append({
@@ -31,13 +30,14 @@ def fetch_data_from_directory(query):
             'source_url': f"http://source.com/lead_{i}",
             'scraped_date': pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')
         })
-        time.sleep(random.uniform(0.5, 1.5)) 
+        time.sleep(random.uniform(0.1, 0.5)) 
 
     return pd.DataFrame(scraped_leads)
 
 if __name__ == "__main__":
     df_raw = fetch_data_from_directory(config['SCRAPING_CONFIG']['PRIMARY_NICHE'])
     
-    # Save raw data (important for debugging)
+    # Save raw data
+    os.makedirs('data/raw', exist_ok=True)
     df_raw.to_csv('data/raw/latest_raw_scrape.csv', index=False)
     print(f"Scraped {len(df_raw)} raw records.")
