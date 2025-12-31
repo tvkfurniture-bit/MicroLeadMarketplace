@@ -38,7 +38,7 @@ def fetch_data_from_directory(query):
 if __name__ == "__main__":
     df_raw = fetch_data_from_directory(config['SCRAPING_CONFIG']['PRIMARY_NICHE'])
     
-    # Save raw data
+    # Ensure the raw directory exists (This line now works)
     os.makedirs('data/raw', exist_ok=True)
     df_raw.to_csv('data/raw/latest_raw_scrape.csv', index=False)
     print(f"Scraped {len(df_raw)} raw records.")
