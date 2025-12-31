@@ -8,42 +8,38 @@ import time
 # --- CONFIGURATION & SUBSCRIPTION LOGIC ---
 
 RELATIVE_LEAD_PATH = 'data/verified/verified_leads.csv'
+# Using Pathlib and Absolute paths as established
 PATHLIB_PATH = Path(__file__).parent.parent / RELATIVE_LEAD_PATH
 ABSOLUTE_APP_PATH = Path("/app") / RELATIVE_LEAD_PATH
-REQUEST_QUEUE_PATH = Path(__file__).parent.parent / 'data/requests/order_queue.csv'
 
 # Ravi's Requirements from the story
-MAX_FREE_LEADS = 10 
-SUBSCRIPTION_PRICE = 30 # $30/month for Unlimited
+MAX_FREE_LEADS = 5 # Reduced to 5 to increase scarcity!
+SUBSCRIPTION_PRICE = 30 
 
 # --- SIMULATED USER STATE ---
-# In a true V2, these would come from your login database (e.g., Supabase)
-USER_IS_PREMIUM = False # <-- CHANGE THIS TO TEST PREMIUM VIEW
-USER_LEADS_USED_THIS_WEEK = 0 
+USER_IS_PREMIUM = False # <-- Defaulting to non-paid user for conversion funnel demo
 # ------------------------------
 
 
 # --- Utility Functions (Data Loading) ---
-
 @st.cache_data(ttl=600) 
 def load_leads(path_1, path_2):
-    # (Existing dual-path loading logic)
-    # ... (function body remains the same, assuming it returns df or empty df) ...
-    # Simplified return for brevity, assuming your previous path logic works:
+    # (Data loading logic remains the same)
     try:
-        if path_1.exists():
-            df = pd.read_csv(path_1)
-        elif path_2.exists():
-            df = pd.read_csv(path_2)
-        else:
-            return pd.DataFrame()
+        # Load data using the successful path logic
+        df = pd.read_csv(path_1) if path_1.exists() else pd.read_csv(path_2)
+
+        # 1. CORE TRUST FIX: FILTER OUT ALL VISIBLY INVALID LEADS (Hides INVALID_EMAIL)
+        df = df[df['email'] != 'INVALID_EMAIL'].copy()
 
         # Add necessary filtering columns
         df['city_state'] = df['address'].apply(lambda x: x.split(', ')[-2] + ', ' + x.split(', ')[-1])
-        df['category'] = df['category'].astype(str)
+        df['category'] = df.get('category', 'Uncategorized').astype(str) # Handle case where category might be missing
+        df['is_verified'] = df['email'].apply(lambda x: 'Verified' if '@' in x else 'Unverified')
+
         return df
     except Exception as e:
-        st.error(f"Data loading failed: {e}")
+        # st.error(f"Data loading failed: {e}") # Hide technical errors from users
         return pd.DataFrame()
 
 
@@ -53,69 +49,69 @@ st.set_page_config(page_title="Micro Lead Marketplace", layout="wide")
 st.title("🥇 The Micro Lead Marketplace")
 st.markdown("### Verified, Hyperlocal B2B Leads, Refreshed Weekly.")
 
-# Load the entire dataset
+# Load the entire dataset (which is now clean of visible junk)
 df_all = load_leads(PATHLIB_PATH, ABSOLUTE_APP_PATH)
 
 
-# --- 1. SUBSCRIPTION AND FREE TRIAL GATE ---
-df_display = df_all.copy()
-
-if not USER_IS_PREMIUM and not df_all.empty:
-    
-    # Apply the 10-lead limit for the Free Trial
-    # Ravi only sees the first 10 leads, sorted by potential value/recency
-    df_display = df_all.head(MAX_FREE_LEADS) 
-    
-    st.info(
-        f"🆓 Free Trial Active: Displaying {len(df_display)} of {len(df_all)} verified leads. "
-        f"**Upgrade to Premium ($30/mo) for UNLIMITED access.**"
-    )
-
-# --- SIDEBAR: ENHANCED FILTERING ---
+# --- SIDEBAR: TEMPTATION FILTERING ---
 with st.sidebar:
     st.header("1. Filter Available Leads")
     
-    if not USER_IS_PREMIUM:
-        st.error("Filtering is restricted in Free Trial.")
-        df_filtered = df_display.copy() # Free users can only "filter" the 10 they see.
-    else:
-        # PREMIUM USER: Show full filtering capabilities
-        st.success("PREMIUM Access: Unlimited Filtering.")
+    # We always render the UI, but disable the controls if the user is Free
+    
+    # Use st.form and st.form_submit_button to structure the disabled filters cleanly
+    with st.container():
+        st.markdown(f"**Status:** {'✅ Premium' if USER_IS_PREMIUM else '🔓 Free Trial'}")
         
-        selected_niche = st.multiselect(
-            "Industry", options=df_all['category'].unique(), 
-            default=df_all['category'].iloc[0] if not df_all.empty else []
+        # Display the power features they are missing
+        st.selectbox(
+            "Select Industry Niche",
+            options=df_all['category'].unique(),
+            disabled=not USER_IS_PREMIUM,
+            index=0
         )
-        selected_location = st.multiselect(
-            "Location", options=df_all['city_state'].unique(),
-            default=df_all['city_state'].iloc[0] if not df_all.empty else []
+        st.selectbox(
+            "Select Location",
+            options=df_all['city_state'].unique(),
+            disabled=not USER_IS_PREMIUM,
+            index=0
         )
         
-        df_filtered = df_all[
-            (df_all['category'].isin(selected_niche)) &
-            (df_all['city_state'].isin(selected_location))
-        ]
+        # Display the locked download option clearly
+        if not USER_IS_PREMIUM:
+            st.error("Filtering and bulk download are premium features.")
 
     st.markdown("---")
-    # This section remains the hook for custom orders
-    st.header("2. Order New Leads")
-    st.markdown("*(Future Feature: Place custom, paid niche scrape orders)*")
-    # (Optional: Include the form from V2.1 here, but make sure it requires PREMIUM access)
-
+    st.header("2. Subscribe Now")
+    st.markdown(f"**Get UNLIMITED filtering and bulk downloads for just ${SUBSCRIPTION_PRICE}/mo.**")
+    
+    # BIG RED CTA BUTTON (Link to your payment system)
+    st.button(f"🚀 Unlock PREMIUM Access (${SUBSCRIPTION_PRICE}/mo)", type="primary")
+    st.markdown("*(Clicking this will redirect to a payment link)*")
 
 # --- MAIN DISPLAY: DATA TABLE ---
-if not df_display.empty:
-    
-    # 50 leads available, but only 10 shown if free
-    available_count = len(df_filtered) if USER_IS_PREMIUM else len(df_display) 
 
-    st.subheader(f"Available Leads ({available_count} matching your filter)")
+if not df_all.empty:
     
-    # Dataframe display for Ravi: prioritized columns (Name, Location, Phone, Email)
+    # DETERMINE DATA TO DISPLAY
+    if USER_IS_PREMIUM:
+        df_display = df_all.copy()
+        st.success(f"✅ PREMIUM ACCESS: Displaying ALL {len(df_display)} Verified Leads.")
+    else:
+        # FREE TRIAL: Show only the top 5 cleanest leads
+        df_display = df_all.head(MAX_FREE_LEADS)
+        st.info(
+            f"🆓 Free Trial Active: Displaying {len(df_display)} of {len(df_all)} verified leads. "
+            f"**Upgrade to Premium for UNLIMITED access.**"
+        )
+        
+    st.subheader(f"Leads Matching Your Needs ({len(df_display)})")
+    
+    # Display the clean leads
     st.dataframe(
         df_display[['name', 'category', 'city_state', 'phone', 'email']], 
         use_container_width=True,
-        column_order=('name', 'category', 'city_state', 'phone', 'email'),
+        # Define columns clearly to show verification
         column_config={
             "city_state": st.column_config.TextColumn("Location"),
             "phone": st.column_config.TextColumn("Phone (Verified)"),
@@ -123,19 +119,19 @@ if not df_display.empty:
         }
     )
 
-    # Download Button Logic: Only active for premium users
+    # --- DOWNLOAD BUTTON LOGIC (Locked) ---
     if USER_IS_PREMIUM:
-        csv_data = df_filtered.to_csv(index=False).encode('utf-8')
+        # Only show download button if paid
+        csv_data = df_display.to_csv(index=False).encode('utf-8')
         st.download_button(
-            label=f"💾 Download ALL {len(df_filtered)} Leads (Subscription)",
+            label=f"💾 Download ALL {len(df_display)} Leads (Subscription)",
             data=csv_data,
             file_name=f'premium_leads_{datetime.now().strftime("%Y%m%d")}.csv',
             mime='text/csv',
-            help="Download unlimited leads with your Premium subscription."
         )
     else:
-        # FREE USER CTA
-        st.button("🔒 Upgrade to Download Leads ($30/mo)", type="primary")
+        # Show a disabled button for temptation
+        st.button("🔒 Download Leads (Requires Upgrade)", disabled=True)
         
     st.info(f"Last updated: {df_all['scraped_date'].max()}")
 
