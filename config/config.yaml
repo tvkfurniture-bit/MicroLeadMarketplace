@@ -4,11 +4,6 @@ SCRAPING_CONFIG:
   PRIMARY_NICHE: "HVAC Services"
   MAX_LEADS_PER_RUN: 500
 
-# Sheet Integration Configuration
-GOOGLE_SHEET:
-  SHEET_TITLE: "MicroLead Marketplace Leads - Verified"
-  CREDENTIALS_FILE: "gs_credentials.json" # Stored securely via GitHub Secrets
-
 # Verification Thresholds
 VERIFICATION:
   EMAIL_REGEX: r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
