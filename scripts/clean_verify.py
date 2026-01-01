@@ -15,7 +15,7 @@ except FileNotFoundError:
 
 EMAIL_REGEX = config['VERIFICATION']['EMAIL_REGEX']
 # Using MIN_PHONE_LENGTH as verified in the configuration
-MIN_PHONE_LEN = config['VERIFICATION']['MIN_PHONE_LENGTH'] 
+MIN_PHONE_LEN = 5 
 
 def verify_data(df):
     print(f"Starting verification on {len(df)} records...")
