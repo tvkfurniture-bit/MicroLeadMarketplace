@@ -15,7 +15,7 @@ USER = {
 }
 USER_IS_PREMIUM = True 
 
-# Define color constants (used for Hero Cards)
+# Define color constants (Used for Hero Cards)
 COLOR_BLUE = "#3b82f6"
 COLOR_GREEN = "#10b981"
 COLOR_ORANGE = "#f59e0b"
@@ -26,14 +26,12 @@ def mask_email(email):
     """PII Masking function."""
     if '@' in email and len(email.split('@')[0]) > 4:
         username, domain = email.split('@')
-        # Mask username but keep domain visible
         return f"{username[:2]}****@{domain}"
     return email
 
 def mask_phone(phone):
     """PII Masking function."""
     if len(phone) > 8:
-        # Mask middle numbers
         return f"{phone[:8]}***-{phone[-4:]}"
     return phone
 
@@ -45,7 +43,7 @@ def render_hero_card(col, title, deal, count, color):
             unsafe_allow_html=True
         )
         st.markdown(f"**{deal}**", unsafe_allow_html=True)
-        st.markdown(f"**{count}** Leads Available", help="Count of leads available for this segment.")
+        st.markdown(f"{count} Leads Available", help="Count of leads available for this segment.")
 
 
 # --------------------------------------------------
@@ -94,7 +92,7 @@ st.markdown("""
 /* Adjust spacing for density */
 .stApp { padding-top: 20px !important; padding-right: 30px !important; padding-left: 30px !important; }
 div[data-testid="stVerticalBlock"] > div:first-child { padding-top: 0 !important; }
-/* Hide unnecessary default Streamlit elements */
+/* Hide unnecessary default Streamlit sidebar menu */
 .st-emotion-cache-1mnrbfp { visibility: hidden !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -111,12 +109,14 @@ st.set_page_config(
 )
 
 
-# 1. TOP HEADER BAR (FINAL PROFESSIONAL FIX)
-header_cols = st.columns([0.1, 7, 1, 1, 1]) 
+# 1. TOP HEADER BAR (V11: FINAL PROFESSIONAL FIX)
+header_cols = st.columns([0.1, 7, 1, 1, 0.5]) 
 
 with header_cols[0]: # Logo/Icon
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/1200px-Stripe_Logo%2C_revised_2016.svg.png", width=20) 
-with header_cols[1]: # User Info Bar (Revised for clean separation)
+    st.markdown("Ⓜ️") 
+    
+with header_cols[1]: # User Info Bar (Cleaned and compacted)
+    # Use nested columns to organize data into a clean row
     meta_cols = st.columns([2, 1.5, 2, 1.5])
     
     with meta_cols[0]:
@@ -128,9 +128,10 @@ with header_cols[1]: # User Info Bar (Revised for clean separation)
     with meta_cols[3]:
         st.caption(f"**{USER['plan']}** | Credits: {USER['credits']}")
 
-# --- RIGHT BUTTONS (The Actions) ---
+# --- RIGHT BUTTONS (FIXED HORIZONTAL LAYOUT) ---
 with header_cols[2]:
-    st.button("Upgrade Plan", use_container_width=True, key="upgrade_top_bar")
+    st.button("Upgrade Plan", key="upgrade_top_bar")
+
 with header_cols[3]:
     st.markdown(f"""
         <style>
@@ -138,6 +139,7 @@ with header_cols[3]:
         </style>
     """, unsafe_allow_html=True)
     st.button("Refer & Earn", key="refer_top_bar")
+
 with header_cols[4]:
     st.button("☰", use_container_width=True, key="menu_top_bar") 
 
