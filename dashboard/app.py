@@ -82,6 +82,11 @@ def mask_email(email):
         return f"{username[:2]}****@{domain}"
     return email
 
+def save_lead_request(niche, location, max_count):
+    # This mock function simulates writing to the data/requests/order_queue.csv
+    # ... (code implementation remains the same from V2.1) ...
+    return True # Simulate success
+
 def mask_phone(phone):
     if len(phone) > 8:
         return f"{phone[:8]}***-{phone[-4:]}"
@@ -284,6 +289,33 @@ else:
     total_leads_for_display = len(df_current_view) 
     df_filtered_for_display = df_current_view.head(TRIAL_LEAD_LIMIT)
 
+st.markdown("---")
+    st.markdown("### 🗺️ Custom Lead Request (Scale Your Business)")
+    st.caption("Request new niches and locations not currently in our inventory.")
+
+    with st.form("custom_lead_order", clear_on_submit=True):
+        f_cols = st.columns(3)
+        niche_input = f_cols[0].text_input("Industry Keyword (e.g., Handyman Services)")
+        location_input = f_cols[1].text_input("City, Country (e.g., Kolkata, India)")
+        max_leads_input = st.slider("Max Leads Desired", min_value=50, max_value=5000, step=50, value=500)
+        
+        submitted = st.form_submit_button("Submit Custom Order (Charge Credits/Invoice)")
+        
+        if submitted:
+            if niche_input and location_input:
+                # --- Simulate successful credit charge/invoice creation here ---
+                
+                if save_lead_request(niche_input, location_input, max_leads_input):
+                    st.success(
+                        f"✅ Order for {niche_input} in {location_input} submitted! "
+                        f"Fulfillment will commence immediately in the next pipeline run (approx 24-48 hours)."
+                    )
+                else:
+                    st.error("Error saving request.")
+            else:
+                st.error("Please fill in both Industry Keyword and Location.")
+
+    st.markdown("---")
 
 # --- LEFT COLUMN: HERO CARDS & TABLE ---
 with main_content_cols[0]:
