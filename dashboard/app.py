@@ -50,27 +50,27 @@ def logout():
     st.session_state['payment_initiated'] = False
     st.rerun()
 
-# --- HELPER FUNCTIONS (Simplified and stable) ---
+# --- HELPER FUNCTIONS ---
 
-def go_to_url(url):
-    """Function to inject JavaScript for external redirect."""
-    st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">', unsafe_allow_html=True)
-    
 def mask_email(email):
     if '@' in email and len(email.split('@')[0]) > 4:
         username, domain = email.split('@')
         return f"{username[:2]}****@{domain}"
     return email
+
 def mask_phone(phone):
     if len(phone) > 8:
         return f"{phone[:8]}***-{phone[-4:]}"
     return phone
+
 def render_hero_card(col, title, deal, count, color):
     with col.container(border=True, height=140):
-        # Use simpler HTML color injection for stability
-        st.markdown(f'<div style="background-color: {color}; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; font-size: 14px;">{title}</div>', unsafe_allow_html=True)
+        st.markdown(
+            f'<div style="background-color: {color}; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; font-size: 14px;">{title}</div>', 
+            unsafe_allow_html=True
+        )
         st.markdown(f"**{deal}**", unsafe_allow_html=True)
-        st.markdown(f"{count} Leads Available", help="Count of leads available for this segment.")
+        st.markdown(f"**{count}** Leads Available", help="Count of leads available for this segment.")
 
 # --------------------------------------------------
 # MOCK LEADS DATA (Full Definition)
@@ -100,7 +100,7 @@ leads_high_conv = len(df_raw[df_raw['Attribute'] == 'High Conversion'])
 
 
 # --------------------------------------------------
-# GLOBAL CSS INJECTION (Stable Styling)
+# GLOBAL CSS INJECTION (FINAL STABLE STYLING)
 # --------------------------------------------------
 st.markdown(f"""
 <style>
@@ -115,7 +115,7 @@ div[data-testid="stVerticalBlock"] > div:first-child {{ padding-top: 0 !importan
     color: white !important;
     border: none !important;
 }}
-/* Fix Button Alignment */
+/* Fix Header Alignment */
 .header-buttons-container {{ display: flex; align-items: center; height: 100%; }}
 
 /* Fix Title Font Size */
@@ -136,10 +136,9 @@ st.set_page_config(
 
 
 # --------------------------------------------------
-# --- AUTHENTICATION GATE --- (Handled above, but structure remains)
+# --- AUTHENTICATION GATE ---
 # --------------------------------------------------
 if not st.session_state['logged_in']:
-    # This block now contains the final successful login logic and st.stop()
     st.title("Micro Lead Marketplace Access")
     st.subheader("Start Your Free Trial — (Zero Dollar Purchase)")
     
@@ -189,12 +188,10 @@ with header_cols[1]: # User Info Bar
 
 # --- RIGHT BUTTONS (FUNCTIONAL LINKS) ---
 with header_cols[2]: 
-    # UPGRADE PLAN: Redirect to payment page
     if st.button("Upgrade Plan", key="upgrade_top_bar"):
         go_to_url(EXTERNAL_UPGRADE_URL)
 
 with header_cols[3]:
-    # REFER & EARN: Redirect to referral page (using primary red style)
     if st.button("Refer & Earn", key="refer_top_bar", type="primary"):
         go_to_url(EXTERNAL_REFERRAL_URL)
 
