@@ -1,7 +1,7 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import base64 # Required for masking/unmasking simulation
+from datetime import datetime
 
 # --------------------------------------------------
 # CONFIGURATION & USER STATE
@@ -11,22 +11,22 @@ USER = {
     "city": "Pune, India",
     "niche": "Marketing Services",
     "plan": "Pro Plan",
-    "credits": 85,
-    "is_premium": True # Set to True for the full dashboard view
+    "credits": 85
 }
+USER_IS_PREMIUM = True # Set to True for the full dashboard view
 
 # Define color constants
 COLOR_BLUE = "#3b82f6"
 COLOR_GREEN = "#10b981"
 COLOR_ORANGE = "#f59e0b"
 
-# --- HELPER FUNCTIONS ---
+# --- HELPER FUNCTIONS FOR DATA MASKING (Requirement 7) ---
 
 def mask_email(email):
     # PII Masking: Ex: info@brightstarco.com -> info@mail****.com
-    if '@' in email:
+    if '@' in email and len(email.split('@')[0]) > 4:
         username, domain = email.split('@')
-        return f"{username}@{domain[:4]}****.com"
+        return f"{username[:4]}****@{domain}"
     return email
 
 def mask_phone(phone):
@@ -34,6 +34,18 @@ def mask_phone(phone):
     if len(phone) > 8:
         return f"{phone[:8]}***-{phone[-4:]}"
     return phone
+
+# --- RENDER FUNCTION (FIXES NameError) ---
+def render_hero_card(col, title, deal, count, color):
+    """Renders a single, color-coded KPI card."""
+    with col.container(border=True, height=140):
+        st.markdown(
+            f'<div style="background-color: {color}; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; font-size: 14px;">{title}</div>', 
+            unsafe_allow_html=True
+        )
+        st.markdown(f"**{deal}**", unsafe_allow_html=True)
+        st.markdown(f"**{count}** Leads Available", help="Count of leads available for this segment.")
+
 
 # --------------------------------------------------
 # MOCK LEADS DATA (Structured to match the image table exactly)
@@ -43,7 +55,6 @@ leads_data = [
         "Business Name": "BrightStar Marketing", "Phone": "+1 555-123-4567", "Email": "info@brightstarco.com",
         "Lead Score": 92, "Reason to Contact": "New Business in Your Area", "Attribute": "New Businesses", "Potential Deal": 500
     },
-    # ... (Rest of leads data) ...
     {
         "Business Name": "GreenLeaf Cafe", "Phone": "+1 555-234-5678", "Email": "contact@greenleafcafe.com",
         "Lead Score": 70, "Reason to Contact": "No Website – Needs Online Presence", "Attribute": "No Website", "Potential Deal": 750
@@ -63,29 +74,42 @@ leads_data = [
 ]
 
 df_raw = pd.DataFrame(leads_data)
-# Add masked data columns (Requirement 7)
-df_raw['Phone_Masked'] = df_raw['Phone'].apply(mask_phone)
-df_raw['Email_Masked'] = df_raw['Email'].apply(mask_email)
+
+# ENRICHMENT AND MASKING FOR DISPLAY
+df_raw['Phone'] = df_raw['Phone'].apply(mask_phone) # Mask PII for default display
+df_raw['Email'] = df_raw['Email'].apply(mask_email)
+df_raw['Reason to Contact'] = df_raw['Reason to Contact'].str.wrap(30) # Wrap long text
+df_raw['Lead Score'] = df_raw['Lead Score'] # Keep score as is for progress bar
+
+# MOCK KPI DATA CALCULATION (Used in Hero Cards)
+leads_new_biz = len(df_raw[df_raw['Attribute'] == 'New Businesses'])
+leads_no_web = len(df_raw[df_raw['Attribute'] == 'No Website'])
+leads_high_conv = len(df_raw[df_raw['Attribute'] == 'High Conversion'])
 
 
 # --------------------------------------------------
-# PAGE CONFIG
+# GLOBAL CSS INJECTION (Density Fixes)
 # --------------------------------------------------
-st.set_page_config(
-    page_title="Micro Lead Marketplace",
-    page_icon="📊",
-    layout="wide",
-    initial_sidebar_state="collapsed" 
-)
+st.markdown("""
+<style>
+/* Adjust top padding and content width */
+.stApp { padding-top: 20px !important; padding-right: 30px !important; padding-left: 30px !important; }
+/* Remove excessive vertical spacing */
+div[data-testid="stVerticalBlock"] > div:first-child { padding-top: 0 !important; }
+/* Reduce padding in table rows for high density */
+.stDataFrame table td { padding: 4px 10px !important; } 
+</style>
+""", unsafe_allow_html=True)
+
 
 # --------------------------------------------------
 # 1. TOP HEADER BAR (Integrated Navigation)
 # --------------------------------------------------
 header_cols = st.columns([0.1, 8, 1, 1, 1])
 
-with header_cols[0]: # Logo/Icon
-    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/1200px-Stripe_Logo%2C_revised_2016.svg.png", width=20)
-with header_cols[1]: # User Info Bar
+with header_cols[0]: 
+    st.markdown("Ⓜ️") # Simple icon
+with header_cols[1]: 
     st.markdown(
         f"<p style='font-size:12px; margin-top: 10px;'>**Micro B2B Lead Marketplace** | Welcome: {USER['name']} | {USER['city']} | Niche: {USER['niche']} | **{USER['plan']}** | Lead Credits: {USER['credits']}</p>",
         unsafe_allow_html=True
@@ -110,74 +134,37 @@ main_content_cols = st.columns([9, 3])
 # --- LEFT COLUMN: HERO CARDS & TABLE ---
 with main_content_cols[0]:
     
-    # 2. HERO CARDS
     hero_cols = st.columns(3)
     
-    # Helper function for colored card simulation
-    def render_hero_card(col, title, deal, count, color):
-        with col.container(border=True, height=140):
-            st.markdown(
-                f'<div style="background-color: {color}; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; font-size: 14px;">{title}</div>', 
-                unsafe_allow_html=True
-            )
-            st.markdown(f"**{deal}**", unsafe_allow_html=True)
-            st.markdown(f"**{count}** Leads Available")
-
+    # Hero Card Calls (FIXED NameError)
     render_hero_card(hero_cols[0], "New Businesses", "$500+ Potential Deal", leads_new_biz, COLOR_BLUE)
     render_hero_card(hero_cols[1], "No Website", "$750+ Potential Deal", leads_no_web, COLOR_GREEN)
     render_hero_card(hero_cols[2], "High Conversion Probability", "$1,000+ Potential Deal", leads_high_conv, COLOR_ORANGE)
 
-    # 5. ACTION BAR (No more floating Send/Call buttons - Requirement 4)
+    # 5. ACTION BAR (Directly below cards)
     action_buttons = st.columns([1.5, 2, 1.5, 1])
-    
-    # Requirement 5: Contextual Export Labels
-    with action_buttons[0]: st.download_button(f"📥 Download CSV ({len(df_raw)} Leads)", df_raw.to_csv(index=False), key="act_csv")
+    with action_buttons[0]: st.button("📥 Download CSV", key="act_csv")
     with action_buttons[1]: st.button("📊 Open in Google Sheets", key="act_sheets")
-    with action_buttons[2]: st.button("✉️ Bulk Email", key="act_email") # Now bulk action
-    with action_buttons[3]: st.button("📞 Call List", key="act_call") # Now bulk action
+    with action_buttons[2]: st.button("✉️ Send Email", key="act_email")
+    with action_buttons[3]: st.button("📞 Call", key="act_call")
+    
+    st.markdown("<br>", unsafe_allow_html=True) 
 
-    st.markdown("---")
+    # 4. LEAD INVENTORY TABLE
+    st.markdown("### Lead Inventory (High Priority)")
     
-    # --- LEAD INVENTORY TABLE (Final Product) ---
-    st.markdown("## Lead Inventory (High Priority)")
-    
-    # Requirement 10: Standardize Pagination
-    # Simulate pagination logic by showing only 5 records per page
-    page_size = 5
-    page_num = 1
-    df_display = df_raw.head(page_size * page_num) # Only shows the first 5 records
+    # We select the columns needed for the final display
+    df_table_view = df_raw[["Business Name", "Phone", "Email", "Lead Score", "Reason to Contact"]].copy()
 
     st.dataframe(
-        df_display,
+        df_table_view,
         use_container_width=True,
         hide_index=True,
-        column_order=("Business Name", "Phone", "Email", "Lead Score", "Reason to Contact", "Actions"),
         column_config={
-            # PII Masking: Display the masked version (Requirement 7)
-            "Phone": st.column_config.TextColumn("Phone", default=df_display['Phone_Masked'].tolist()), 
-            "Email": st.column_config.TextColumn("Email", default=df_display['Email_Masked'].tolist()),
-
-            # Lead Score Visualization (Requirement 2: Score Calibration)
-            "Lead Score": st.column_config.ProgressColumn("Lead Score", format="%d", min_value=0, max_value=100,
-                # Simulate the red bar visualization
-                color="red"
-            ),
-            
-            # Requirement 4: Direct Action Mapping (Buttons for each row)
-            "Actions": st.column_config.Column("Actions", 
-                help="Initiate direct outreach or view profile.",
-                width="small",
-                # Note: Streamlit Dataframe doesn't allow interactive buttons inside cells. We simulate the links/buttons.
-            ),
-             # Hide masked and internal columns
-            "Phone_Masked": None,
-            "Email_Masked": None,
-            "Attribute": None,
-            "Potential Deal": None
+            # Lead Score Visualization (Uses custom red bar visualization required by design)
+            "Lead Score": st.column_config.ProgressColumn("Lead Score", format="%d", min_value=0, max_value=100, color="red")
         }
     )
-    # Simulation of action buttons next to the table
-    st.markdown('<p style="font-size:12px; margin-top:-20px;">*Individual actions (Call/Email/View) are available directly on the record line (Backend required).*</p>', unsafe_allow_html=True)
 
 
 # --- RIGHT COLUMN: OUTREACH & EARNINGS PANEL ---
@@ -189,32 +176,28 @@ with main_content_cols[1]:
         template_tab1, template_tab2, template_tab3 = st.tabs(["Email", "WhatsApp", "Call Scripts"])
         
         with template_tab1:
-            st.caption("Subject: High-Conversion Pitch (Jinja2 Supported)") # Requirement 9
+            st.caption("Subject: High-Conversion Pitch (Jinja2 Supported)")
             st.text_area("Template Preview", "Hi {{BusinessName}}, I noticed...", height=100, label_visibility="collapsed")
-            # Requirement 8: Asynchronous Queue Simulation
-            st.button("Generate & Send (Async)", use_container_width=True, help="Sends job to secure worker queue.") 
+            st.button("Generate & Send (Async)", use_container_width=True, key="send_gen") 
 
-    # 7. POTENTIAL EARNINGS TRACKER (Requirement 3: Clarify KPI)
+    # 7. POTENTIAL EARNINGS TRACKER (Simulating the final metric card)
     st.markdown("<br>", unsafe_allow_html=True)
     with st.container(border=True):
-        st.markdown("##### Probabilistic Conversion Value") # Renamed for clarity
+        st.markdown("##### Probabilistic Conversion Value")
         st.markdown("### Estimated Income: **$3,750 Today**")
-        st.progress(70)
-        st.caption("Calculation: Sum of potential deals * 15% estimated conversion rate.") # Tooltip/Explanation
+        st.progress(70) 
+        st.caption("Contact more leads to increase earnings!")
 
-    # 8. UPGRADE NUDGE (Locked feature simulation)
-    st.markdown("<br>", unsafe_allow_html=True) 
-
-    # Requirement 6: Showcase Masked Value
-    with st.container(border=True):
-        st.markdown("##### Unlock Exclusive Leads")
-        # Masked value demonstration
-        st.info("🔥 **Mega Corp Lead** - Score 98 - 🔒 Unlock with 10 Credits")
-        st.button("Upgrade Now", type="primary", use_container_width=True)
-
-    # 9. REFERRAL ENGINE
+    # 8. UPGRADE NUDGE (Simplified Card)
     st.markdown("<br>", unsafe_allow_html=True) 
     with st.container(border=True):
-        st.markdown("##### Earn Referral Bonuses")
+        st.markdown("⭐ Unlock Premium Leads")
+        st.caption("Get Exclusive High-Value Leads")
+        st.button("Upgrade Now", use_container_width=True, type="primary")
+
+    # 9. REFERRAL ENGINE (Simplified Card)
+    st.markdown("<br>", unsafe_allow_html=True) 
+    with st.container(border=True):
+        st.markdown("📞 Earn Referral Bonuses")
         st.caption("Invite Friends & Earn Rewards")
         st.button("Invite & Earn", use_container_width=True)
