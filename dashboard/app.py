@@ -4,7 +4,6 @@ import numpy as np
 import os
 from pathlib import Path
 from datetime import datetime
-import time # Added for simulating payment delays
 
 # --------------------------------------------------
 # CONFIGURATION & FILE PATH SETUP
@@ -22,7 +21,7 @@ COLOR_ORANGE = "#f59e0b"
 PAYPAL_TRIAL_LINK = "https://www.paypal.com/instant-key-checkout-0dollar" 
 EXTERNAL_UPGRADE_URL = "https://yourstripe.com/checkout/premium" 
 EXTERNAL_REFERRAL_URL = "https://yourapp.com/ref/ravi" 
-REQUEST_QUEUE_PATH = Path('data/requests/order_queue.csv') # Path for custom order requests
+REQUEST_QUEUE_PATH = Path('data/requests/order_queue.csv')
 
 # --- FILE PATH SETUP (Connects to the GitHub Action output) ---
 RELATIVE_LEAD_PATH = 'data/verified/verified_leads.csv'
@@ -158,7 +157,7 @@ def load_live_data():
 
 
 # --------------------------------------------------
-# GLOBAL DATA LOAD 
+# GLOBAL DATA LOAD (This runs once when the script starts)
 # --------------------------------------------------
 df_raw = load_live_data() 
 
@@ -359,19 +358,17 @@ with main_content_cols[0]:
             submitted = st.form_submit_button("Submit Custom Order (Charge Credits/Invoice)")
             
             if submitted:
-        if niche_input and location_input: # Line 361
-                # Line 362: MUST BE INDENTED 4 SPACES FROM THE START OF 'if niche_input...'
-                
-                # Execute mock logic to save request
-                if save_lead_request(niche_input, location_input, max_leads_input, st.session_state['user']['name']):
-                    st.success(
-                        f"✅ Order for {niche_input} in {location_input} submitted! "
-                        f"Fulfillment will commence immediately in the next pipeline run (approx 24-48 hours)."
-                    )
+                if niche_input and location_input:
+                    if save_lead_request(niche_input, location_input, max_leads_input, st.session_state['user']['name']):
+                        st.success(
+                            f"✅ Order for {niche_input} in {location_input} submitted! "
+                            f"Fulfillment will commence immediately in the next pipeline run (approx 24-48 hours)."
+                        )
+                    else:
+                        st.error("Error saving request.")
                 else:
-                    st.error("Error saving request.")
-            else:
-                st.error("Please fill in both Industry Keyword and Location.")
+                    st.error("Please fill in both Industry Keyword and Location.")
+        st.markdown("---")
     
     # 4. LEAD INVENTORY TABLE
     st.markdown("### Lead Inventory (High Priority)")
