@@ -16,9 +16,9 @@ COLOR_GREEN = "#10b981"
 COLOR_ORANGE = "#f59e0b"
 
 # --- EXTERNAL URLS (Mockup) ---
-PAYPAL_TRIAL_LINK = "https://www.paypal.com/instant-key-checkout-0dollar" # MOCK PayPal link
-EXTERNAL_UPGRADE_URL = "https://yourstripe.com/checkout/premium" # MOCK Checkout URL
-EXTERNAL_REFERRAL_URL = "https://yourapp.com/ref/ravi" # MOCK Referral Link
+PAYPAL_TRIAL_LINK = "https://www.paypal.com/instant-key-checkout-0dollar" 
+EXTERNAL_UPGRADE_URL = "https://yourstripe.com/checkout/premium" 
+EXTERNAL_REFERRAL_URL = "https://yourapp.com/ref/ravi" 
 
 # --- SESSION STATE INITIALIZATION ---
 if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
@@ -33,12 +33,22 @@ def login_successful(key):
         st.session_state['logged_in'] = True
         st.session_state['is_premium'] = True
         st.session_state['user'] = {"name": "Ravi Kumar", "city": "Pune, India", "niche": "Grocery Stores", "plan": "Pro Plan", "credits": 85}
+        # Reset filters to show all for premium user initially
+        st.session_state['filter_city'] = 'All'
+        st.session_state['filter_niche'] = 'All'
+        st.session_state['filter_score'] = 0 # Lower to show more leads
+        st.session_state['filter_reason'] = 'All'
         st.rerun() 
         return True
     elif key == TRIAL_KEY:
         st.session_state['logged_in'] = True
         st.session_state['is_premium'] = False
         st.session_state['user'] = {"name": "New Trialist", "city": "Pune, India", "niche": "Grocery Stores", "plan": "Trial", "credits": 10}
+        # For trial, set default filters to match their limited view
+        st.session_state['filter_city'] = 'Pune, India'
+        st.session_state['filter_niche'] = 'Grocery Stores'
+        st.session_state['filter_score'] = 70 # Default min score
+        st.session_state['filter_reason'] = 'All'
         st.rerun() 
         return True
     return False
@@ -51,18 +61,15 @@ def logout():
     st.rerun()
 
 # --- HELPER FUNCTIONS ---
-
 def mask_email(email):
     if '@' in email and len(email.split('@')[0]) > 4:
         username, domain = email.split('@')
         return f"{username[:2]}****@{domain}"
     return email
-
 def mask_phone(phone):
     if len(phone) > 8:
         return f"{phone[:8]}***-{phone[-4:]}"
     return phone
-
 def render_hero_card(col, title, deal, count, color):
     with col.container(border=True, height=140):
         st.markdown(
@@ -88,19 +95,14 @@ leads_data = [
 ]
 df_raw = pd.DataFrame(leads_data)
 
-# APPLY PII MASKING 
-is_premium = st.session_state['is_premium']
-df_raw['Phone'] = df_raw.apply(lambda row: row['Phone'] if is_premium else mask_phone(row['Phone']), axis=1)
-df_raw['Email'] = df_raw.apply(lambda row: row['Email'] if is_premium else mask_email(row['Email']), axis=1)
-
-# MOCK KPI DATA CALCULATION
-leads_new_biz = len(df_raw[df_raw['Attribute'] == 'New Businesses'])
-leads_no_web = len(df_raw[df_raw['Attribute'] == 'No Website'])
-leads_high_conv = len(df_raw[df_raw['Attribute'] == 'High Conversion'])
+# MOCK KPI DATA CALCULATION (These counts are from the FULL df_raw, not filtered)
+leads_new_biz_count = len(df_raw[df_raw['Attribute'] == 'New Businesses'])
+leads_no_web_count = len(df_raw[df_raw['Attribute'] == 'No Website'])
+leads_high_conv_count = len(df_raw[df_raw['Attribute'] == 'High Conversion'])
 
 
 # --------------------------------------------------
-# GLOBAL CSS INJECTION (FINAL STABLE STYLING)
+# GLOBAL CSS INJECTION (Stable Styling)
 # --------------------------------------------------
 st.markdown(f"""
 <style>
@@ -186,17 +188,10 @@ with header_cols[1]: # User Info Bar
     with meta_cols[2]: st.caption(f"{st.session_state['user']['city']} | Niche: {st.session_state['user']['niche']}")
     with meta_cols[3]: st.caption(f"**{st.session_state['user']['plan']}** | Credits: {st.session_state['user']['credits']}")
 
-# --- RIGHT BUTTONS (FUNCTIONAL LINKS) ---
-with header_cols[2]: 
-    if st.button("Upgrade Plan", key="upgrade_top_bar"):
-        go_to_url(EXTERNAL_UPGRADE_URL)
-
-with header_cols[3]:
-    if st.button("Refer & Earn", key="refer_top_bar", type="primary"):
-        go_to_url(EXTERNAL_REFERRAL_URL)
-
-with header_cols[4]:
-    st.button("☰", use_container_width=True, key="menu_top_bar", on_click=logout) 
+# --- RIGHT BUTTONS ---
+with header_cols[2]: st.button("Upgrade Plan", key="upgrade_top_bar")
+with header_cols[3]: st.button("Refer & Earn", key="refer_top_bar", type="primary")
+with header_cols[4]: st.button("☰", use_container_width=True, key="menu_top_bar", on_click=logout) 
 
 st.markdown("---")
 
@@ -212,31 +207,39 @@ if 'filter_reason' not in st.session_state: st.session_state['filter_reason'] = 
 
 
 # --- DYNAMIC FILTERING LOGIC ---
-df_filtered = df_raw.copy()
+df_current_view = df_raw.copy() # Start with the full raw data
+
 is_premium = st.session_state['is_premium']
 
-# APPLY FILTERS based on session state
+# Apply filters based on session state for PREMIUM users
 if is_premium:
-    if st.session_state['filter_city'] != 'All': df_filtered = df_filtered[df_filtered['City'] == st.session_state['filter_city']]
-    if st.session_state['filter_niche'] != 'All': df_filtered = df_filtered[df_filtered['Niche'] == st.session_state['filter_niche']]
-    if st.session_state['filter_score'] > 0: df_filtered = df_filtered[df_filtered['Lead Score'] >= st.session_state['filter_score']]
-    total_leads_for_display = len(df_filtered)
+    if st.session_state['filter_city'] != 'All': 
+        df_current_view = df_current_view[df_current_view['City'] == st.session_state['filter_city']]
+    if st.session_state['filter_niche'] != 'All': 
+        df_current_view = df_current_view[df_current_view['Niche'] == st.session_state['filter_niche']]
+    if st.session_state['filter_score'] > 0: 
+        df_current_view = df_current_view[df_current_view['Lead Score'] >= st.session_state['filter_score']]
+    if st.session_state['filter_reason'] != 'All':
+        df_current_view = df_current_view[df_current_view['Reason to Contact'].str.contains(st.session_state['filter_reason'], case=False, na=False)]
+    
+    total_leads_for_display = len(df_current_view)
+    df_filtered_for_display = df_current_view # Premium users see all filtered leads
 else:
     # Trial Logic: Enforce Ravi's default niche and limit leads
-    df_filtered = df_filtered[df_filtered['City'] == st.session_state['user']['city']]
-    df_filtered = df_filtered[df_filtered['Niche'] == st.session_state['user']['niche']]
+    df_current_view = df_current_view[df_current_view['City'] == st.session_state['user']['city']]
+    df_current_view = df_current_view[df_current_view['Niche'] == st.session_state['user']['niche']]
     
-    total_leads_for_display = len(df_filtered)
-    df_filtered = df_filtered.head(TRIAL_LEAD_LIMIT)
+    total_leads_for_display = len(df_current_view) # Count before limiting for message
+    df_filtered_for_display = df_current_view.head(TRIAL_LEAD_LIMIT) # Trial users see only a subset
 
 
 # --- LEFT COLUMN: HERO CARDS & TABLE ---
 with main_content_cols[0]:
     
     hero_cols = st.columns(3)
-    render_hero_card(hero_cols[0], "New Businesses", "$500+ Potential Deal", leads_new_biz, COLOR_BLUE)
-    render_hero_card(hero_cols[1], "No Website", "$750+ Potential Deal", leads_no_web, COLOR_GREEN)
-    render_hero_card(hero_cols[2], "High Conversion Probability", "$1,000+ Potential Deal", leads_high_conv, COLOR_ORANGE)
+    render_hero_card(hero_cols[0], "New Businesses", "$500+ Potential Deal", leads_new_biz_count, COLOR_BLUE)
+    render_hero_card(hero_cols[1], "No Website", "$750+ Potential Deal", leads_no_web_count, COLOR_GREEN)
+    render_hero_card(hero_cols[2], "High Conversion Probability", "$1,000+ Potential Deal", leads_high_conv_count, COLOR_ORANGE)
 
     # 5. ACTION BAR 
     action_buttons = st.columns([1.5, 2, 1.5, 1])
@@ -256,15 +259,17 @@ with main_content_cols[0]:
     
     city_options = df_raw['City'].unique().tolist()
     niche_options = df_raw['Niche'].unique().tolist()
+    reason_options = ['All'] + df_raw['Reason to Contact'].unique().tolist()
     
     city_index = city_options.index(st.session_state['user']['city']) if st.session_state['user']['city'] in city_options else 0
     niche_index = niche_options.index(st.session_state['user']['niche']) if st.session_state['user']['niche'] in niche_options else 0
+    reason_index = reason_options.index(st.session_state['filter_reason']) if st.session_state['filter_reason'] in reason_options else 0
     
     filter_cols = st.columns(4)
-    filter_cols[0].selectbox("City", city_options, key="filter_city", disabled=not is_premium, index=city_index)
-    filter_cols[1].selectbox("Niche", niche_options, key="filter_niche", disabled=not is_premium, index=niche_index)
-    filter_cols[2].slider("Min Score", 0, 100, st.session_state['filter_score'], key="filter_score", disabled=not is_premium)
-    filter_cols[3].selectbox("Reason", ['All', 'New Business', 'No Website'], key="filter_reason", disabled=not is_premium)
+    filter_cols[0].selectbox("City", city_options, key="filter_city", disabled=not is_premium, on_change=st.rerun, index=city_index)
+    filter_cols[1].selectbox("Niche", niche_options, key="filter_niche", disabled=not is_premium, on_change=st.rerun, index=niche_index)
+    filter_cols[2].slider("Min Score", 0, 100, st.session_state['filter_score'], key="filter_score", disabled=not is_premium, on_change=st.rerun)
+    filter_cols[3].selectbox("Reason", reason_options, key="filter_reason", disabled=not is_premium, on_change=st.rerun, index=reason_index)
     
     # 4. LEAD INVENTORY TABLE
     st.markdown("### Lead Inventory (High Priority)")
@@ -273,7 +278,7 @@ with main_content_cols[0]:
         st.warning("No leads found for your current criteria.")
     else:
         st.dataframe(
-            df_filtered[["Business Name", "Phone", "Email", "Lead Score", "Reason to Contact"]],
+            df_filtered_for_display[["Business Name", "Phone", "Email", "Lead Score", "Reason to Contact"]],
             use_container_width=True,
             hide_index=True,
             column_config={
@@ -299,7 +304,7 @@ with main_content_cols[1]:
     st.markdown("<br>", unsafe_allow_html=True)
     with st.container(border=True):
         st.markdown("##### Probabilistic Conversion Value")
-        st.markdown(f"### Estimated Income: **${len(df_filtered) * 75} Today**")
+        st.markdown(f"### Estimated Income: **${len(df_filtered_for_display) * 75} Today**")
         st.progress(70) 
         st.caption("Contact more leads to increase earnings!")
 
