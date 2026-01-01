@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-from datetime import datetime
 import os
 from pathlib import Path
+from datetime import datetime
 
 # --------------------------------------------------
 # CONFIGURATION & FILE PATH SETUP
@@ -113,6 +113,7 @@ def load_live_data():
         # --- ENRICHMENT LOGIC (Adds UI-required columns not in the raw CSV) ---
         
         # Rename columns from scraper output to UI expectations
+        # Assumes scraper outputs: name, phone, email, category, address
         df.rename(columns={'name': 'Business Name', 'phone': 'Phone', 'email': 'Email', 'category': 'Niche'}, inplace=True)
         
         # Create UI-dependent columns (MOCK LOGIC)
