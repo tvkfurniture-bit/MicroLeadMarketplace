@@ -33,13 +33,13 @@ jobs:
         # This installs the necessary browser engine for the scraping script to work
         run: playwright install chromium --with-deps
 
-      - name: Run Production Scraper and Verification
-        # This single script now handles:
-        # 1. Scraping data via Playwright.
-        # 2. Cleaning/Verifying data.
-        # 3. Inserting data directly into the PostgreSQL database using $DATABASE_URL.
-        run: python scripts/real_scraper.py 
-        # Note: We assume 'real_scraper.py' is the updated name for the combined script.
+      - name: Run Scraper
+        # Creates data/raw/latest_raw_scrape.csv
+        run: python scripts/scrape_sources.py
+      
+      - name: Run Cleaner and Verifier
+        # Reads raw data, cleans it, and creates data/verified/verified_leads.csv
+        run: python scripts/clean_verify.py
 
       - name: Database Update Success
         run: echo "✅ Pipeline completed. Data sent directly to PostgreSQL database. Streamlit app will update automatically."
