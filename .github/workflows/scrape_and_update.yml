@@ -15,7 +15,6 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          # CRITICAL: Re-enabling the GH_TOKEN token for file commit
           token: ${{ secrets.GH_TOKEN }}
 
       - name: Set up Python
@@ -26,10 +25,6 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
         
-      - name: Install Python Utilities (Ensure all packages are installed)
-        # Required if your scraper relies on playwright or other tools not in core requirements.txt
-        run: pip install numpy pyyaml pandas
-
       - name: Create Data Directories
         run: |
           mkdir -p data/raw
@@ -41,21 +36,23 @@ jobs:
       - name: Run Cleaner and Verifier
         run: python scripts/clean_verify.py
 
-      # --- RESTORED: COMMIT AND PUSH NEW LEADS ---
+      # --- FINAL COMMIT AND PUSH NEW LEADS ---
       - name: Commit and Push new leads
         id: commit
         run: |
-          # Ensure Git detects changes by using the robust add all flag
+          # 1. Configure Git user
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           
-          # Stage all files in the data/verified directory
-          git add -A data/verified/verified_leads.csv
+          # 2. Stage the specific file
+          git add data/verified/verified_leads.csv
           
-          # Check if there are staged changes before committing
-          if git diff --cached --quiet; then
+          # 3. Check if any file was actually staged (i.e., if content changed)
+          if git diff --staged --quiet; then
+            # If diff is quiet, nothing changed
             echo "commit_needed=false" >> $GITHUB_OUTPUT 
           else
+            # If diff is NOT quiet, content changed, proceed to commit
             echo "commit_needed=true" >> $GITHUB_OUTPUT
             git commit -m "🤖 AUTO: Updated verified lead data [skip ci]"
             git push
