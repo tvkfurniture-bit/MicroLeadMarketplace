@@ -5,10 +5,12 @@ import os
 from datetime import datetime
 
 # --- Load Configuration ---
-# NOTE: The PATH for config.yaml assumes this script is run from the project root
-# (as it is by GitHub Actions).
-with open('config/config.yaml', 'r') as f:
-    config = yaml.safe_load(f)
+try:
+    with open('config/config.yaml', 'r') as f:
+        config = yaml.safe_load(f)
+except FileNotFoundError:
+    print("Error: config/config.yaml not found.")
+    exit(1)
 
 EMAIL_REGEX = config['VERIFICATION']['EMAIL_REGEX']
 MIN_PHONE_LEN = config['VERIFICATION']['MIN_PHONE_LENGTH']
@@ -18,22 +20,22 @@ def verify_data(df):
     
     # 1. Deduplication (Key Business Logic)
     df.drop_duplicates(subset=['name', 'address'], keep='first', inplace=True)
-    print(f"After deduplication: {len(df)} records remain.")
     
-    # 2. Basic Email Validation (Tier 1 - RE-ENABLED)
+    # 2. Basic Email Validation (Tier 1)
     df['email_verified'] = df['email_raw'].apply(
         lambda x: bool(re.match(EMAIL_REGEX, str(x)))
     )
-    # Filter the leads that have valid email syntax
-    df_verified = df[df['email_verified'] == True].copy() 
-    print(f"After email validation: {len(df_verified)} records remain.")
+    df_verified = df[df['email_verified'] == True].copy()
     
     # 3. Phone Cleanup & Validation
     df_verified['phone_clean'] = df_verified['phone'].astype(str).str.replace(r'[^0-9]', '', regex=True)
     df_verified['phone_verified'] = df_verified['phone_clean'].str.len() >= MIN_PHONE_LEN
     
-    # 4. Final Output Formatting (Only include leads that passed all quality checks)
-    df_final = df_verified[df_verified['phone_verified']].copy()
+    # 4. Final Output Formatting (Only include records verified for both)
+    df_final = df_verified[
+        (df_verified['phone_verified']) & 
+        (df_verified['email_verified'])
+    ].copy()
     
     # Select only the clean columns for the marketplace product
     df_final = df_final[['name', 'category', 'address', 'phone', 'email_raw', 'source_url', 'scraped_date']]
@@ -44,15 +46,22 @@ def verify_data(df):
 
 if __name__ == "__main__":
     try:
-        # NOTE: Using a relative path that works because the GA workflow runs from the root
-        df_raw = pd.read_csv('data/raw/latest_raw_scrape.csv')
+        raw_file_path = 'data/raw/latest_raw_scrape.csv'
+        if not os.path.exists(raw_file_path):
+             # Ensure the scraper ran successfully before proceeding
+             raise FileNotFoundError("Raw scrape file missing. Ensure scripts/scrape_sources.py ran successfully.")
+            
+        df_raw = pd.read_csv(raw_file_path)
         
-        # Ensure critical columns are strings before cleanup
+        # Explicitly cast columns to string to prevent validation errors
         df_raw['phone'] = df_raw['phone'].astype(str)
         df_raw['email_raw'] = df_raw['email_raw'].astype(str)
         
     except FileNotFoundError as e:
         print(f"Error: {e}")
+        exit(1)
+    except Exception as e:
+        print(f"Critical error during data loading or casting: {e}")
         exit(1)
         
     df_clean = verify_data(df_raw)
@@ -60,7 +69,13 @@ if __name__ == "__main__":
     # Ensure the verified directory exists
     os.makedirs('data/verified', exist_ok=True)
     
-    # Save the FINAL verified product
+    # Save the FINAL verified product (The core business asset)
     output_path = 'data/verified/verified_leads.csv'
-    df_clean.to_csv(output_path, index=False)
-    print(f"Successfully saved verified leads to {output_path}.")
+    
+    if not df_clean.empty:
+        df_clean.to_csv(output_path, index=False)
+        print(f"Successfully saved verified leads to {output_path}.")
+    else:
+        # Crucial for stability: If empty, write only headers to avoid "File Not Found" errors in Streamlit
+        pd.DataFrame(columns=['name', 'category', 'address', 'phone', 'email', 'source_url', 'scraped_date']).to_csv(output_path, index=False)
+        print("Warning: No verified leads were generated. Wrote empty headers.")
