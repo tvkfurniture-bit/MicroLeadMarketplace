@@ -359,17 +359,18 @@ with main_content_cols[0]:
             submitted = st.form_submit_button("Submit Custom Order (Charge Credits/Invoice)")
             
             if submitted:
-                if niche_input and location_input:
-                    # Execute mock logic to save request
-                    if save_lead_request(niche_input, location_input, max_leads_input, st.session_state['user']['name']):
-                        st.success(
-                            f"✅ Order for {niche_input} in {location_input} submitted! "
-                            f"Fulfillment will commence immediately in the next pipeline run (approx 24-48 hours)."
-                        )
-                    else:
-                        st.error("Error saving request.")
-                else:
-                    st.error("Please fill in both Industry Keyword and Location.")
+        if niche_input and location_input:
+            
+            # --- Code that saves the request executes here ---
+            if save_lead_request(niche_input, location_input, max_leads_input, st.session_state['user']['name']):
+                st.success(
+                    f"✅ Order for {niche_input} in {location_input} submitted! "
+                    f"Fulfillment will commence immediately in the next pipeline run (approx 24-48 hours)."
+                )
+            else:
+                st.error("Error saving request.")
+        else:
+            st.error("Please fill in both Industry Keyword and Location.")
         st.markdown("---")
     
     # 4. LEAD INVENTORY TABLE
