@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 # --------------------------------------------------
-# CONFIGURATION & FILE PATH SETUP (LINES 1 - 77)
+# CONFIGURATION & FILE PATH SETUP
 # --------------------------------------------------
 PREMIUM_ACCESS_KEY = "30DAYPRO" 
 TRIAL_KEY = "TRIAL-ACCESS-12345" 
@@ -26,7 +26,10 @@ EXTERNAL_REFERRAL_URL = "https://yourapp.com/ref/ravi"
 RELATIVE_LEAD_PATH = 'data/verified/verified_leads.csv'
 PATHLIB_PATH = Path(__file__).parent.parent / RELATIVE_LEAD_PATH
 
-# --- SESSION STATE INITIALIZATION ---
+# --------------------------------------------------
+# SESSION STATE AND AUTH FUNCTIONS
+# --------------------------------------------------
+
 if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
 if 'is_premium' not in st.session_state: st.session_state['is_premium'] = False
 if 'payment_initiated' not in st.session_state: st.session_state['payment_initiated'] = False 
@@ -68,7 +71,11 @@ def go_to_url(url):
     """Function to inject JavaScript for external redirect."""
     st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">', unsafe_allow_html=True)
 
-# --- HELPER FUNCTIONS ---
+
+# --------------------------------------------------
+# DATA LOADING AND HELPER FUNCTIONS
+# --------------------------------------------------
+
 def mask_email(email):
     if '@' in email and len(email.split('@')[0]) > 4:
         username, domain = email.split('@')
@@ -106,7 +113,6 @@ def load_live_data():
         # --- ENRICHMENT LOGIC (Adds UI-required columns not in the raw CSV) ---
         
         # Rename columns from scraper output to UI expectations
-        # Assumes scraper outputs: name, phone, email, category, address
         df.rename(columns={'name': 'Business Name', 'phone': 'Phone', 'email': 'Email', 'category': 'Niche'}, inplace=True)
         
         # Create UI-dependent columns (MOCK LOGIC)
@@ -141,7 +147,7 @@ leads_high_conv_count = len(df_raw[df_raw['Attribute'] == 'High Conversion']) if
 
 
 # --------------------------------------------------
-# GLOBAL CSS INJECTION (Stable Styling)
+# GLOBAL CSS INJECTION
 # --------------------------------------------------
 st.markdown(f"""
 <style>
@@ -363,7 +369,7 @@ with main_content_cols[1]:
 
     # 9. REFERRAL ENGINE
     st.markdown("<br>", unsafe_allow_html=True) 
-        with st.container(border=True):
-            st.markdown("📞 Earn Referral Bonuses")
-            st.caption("Invite Friends & Earn Rewards")
-            st.button("Invite & Earn", use_container_width=True, key="invite_nudge", type="primary")
+    with st.container(border=True):
+        st.markdown("📞 Earn Referral Bonuses")
+        st.caption("Invite Friends & Earn Rewards")
+        st.button("Invite & Earn", use_container_width=True, key="invite_nudge", type="primary")
