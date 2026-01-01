@@ -7,4 +7,4 @@ SCRAPING_CONFIG:
 # Verification Thresholds
 VERIFICATION:
   EMAIL_REGEX: r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$"
-  MIN_PHONE_LENGTH: 8
+  MIN_PHONE_LENGTH: 8 # The key must be MIN_PHONE_LENGTH
