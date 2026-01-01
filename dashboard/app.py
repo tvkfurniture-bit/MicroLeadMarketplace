@@ -118,6 +118,31 @@ div[data-testid="stVerticalBlock"] > div:first-child {{ padding-top: 0 !importan
 </style>
 """, unsafe_allow_html=True)
 
+/* Custom style for the Upgrade Plan link button */
+.upgrade-link-button {{
+    display: block;
+    text-align: center;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+    padding: 0.35rem; /* Adjust padding to match st.button size */
+    text-decoration: none;
+    color: #4B4B4B; /* Dark grey color */
+    font-weight: 500;
+}}
+
+/* Custom style for the Refer & Earn button (Primary Red) */
+.refer-link-button {{
+    display: block;
+    text-align: center;
+    background-color: {COLOR_RED_CTA};
+    color: white !important;
+    border-radius: 0.5rem;
+    padding: 0.35rem; /* Adjust padding to match st.button size */
+    text-decoration: none;
+    font-weight: 500;
+}}
+</style>
+""", unsafe_allow_html=True)
 
 # --------------------------------------------------
 # PAGE CONFIG
@@ -181,10 +206,25 @@ with header_cols[1]: # User Info Bar
     with meta_cols[2]: st.caption(f"{st.session_state['user']['city']} | Niche: {st.session_state['user']['niche']}")
     with meta_cols[3]: st.caption(f"**{st.session_state['user']['plan']}** | Credits: {st.session_state['user']['credits']}")
 
-# --- RIGHT BUTTONS ---
-with header_cols[2]: st.button("Upgrade Plan", key="upgrade_top_bar")
-with header_cols[3]: st.button("Refer & Earn", key="refer_top_bar", type="primary")
-with header_cols[4]: st.button("☰", use_container_width=True, key="menu_top_bar", on_click=logout) 
+# --- RIGHT BUTTONS (FUNCTIONAL LINKS) ---
+
+with header_cols[2]:
+    # UPGRADE PLAN (Functional Link)
+    st.markdown(
+        f'<a href="{EXTERNAL_UPGRADE_URL}" target="_blank" class="upgrade-link-button">Upgrade Plan</a>',
+        unsafe_allow_html=True
+    )
+
+with header_cols[3]:
+    # REFER & EARN (Functional Link using Red Style)
+    st.markdown(
+        f'<a href="{EXTERNAL_REFERRAL_URL}" target="_blank" class="refer-link-button">Refer & Earn</a>',
+        unsafe_allow_html=True
+    )
+
+with header_cols[4]:
+    # Hamburger Menu (using standard button as it controls internal state)
+    st.button("☰", use_container_width=True, key="menu_top_bar", on_click=logout) 
 
 st.markdown("---")
 
