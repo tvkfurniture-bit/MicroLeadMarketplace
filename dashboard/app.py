@@ -391,6 +391,23 @@ with main_content_cols[0]:
             }
         )
 
+st.markdown("## ⏳ My Order Status")
+
+# Logic to load order_queue.csv and filter by user
+if not df_orders.empty:
+    df_my_orders = df_orders[df_orders['user_id'] == st.session_state['user']['name']].tail(3)
+
+    for index, row in df_my_orders.iterrows():
+        status_emoji = "✅" if row['status'] == 'SCRAPE_COMPLETE' else "🔄"
+        status_color = "green" if row['status'] == 'SCRAPE_COMPLETE' else "orange"
+        
+        st.markdown(
+            f"<span style='color:{status_color}; font-weight:bold;'>{status_emoji} {row['status']}</span> "
+            f"- {row['niche']} in {row['location']}",
+            unsafe_allow_html=True
+        )
+else:
+    st.caption("No custom orders placed yet.")
 
 # --- RIGHT COLUMN: OUTREACH & EARNINGS PANEL ---
 with main_content_cols[1]:
