@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import os
+from pathlib import Path # Required for robust file path
 
 # --------------------------------------------------
 # CONFIGURATION & USER STATE MANAGEMENT
@@ -20,6 +22,10 @@ PAYPAL_TRIAL_LINK = "https://www.paypal.com/instant-key-checkout-0dollar"
 EXTERNAL_UPGRADE_URL = "https://yourstripe.com/checkout/premium" 
 EXTERNAL_REFERRAL_URL = "https://yourapp.com/ref/ravi" 
 
+# --- FILE PATH SETUP (Connects to the GitHub Action output) ---
+RELATIVE_LEAD_PATH = 'data/verified/verified_leads.csv'
+PATHLIB_PATH = Path(__file__).parent.parent / RELATIVE_LEAD_PATH
+
 # --- SESSION STATE INITIALIZATION ---
 if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
 if 'is_premium' not in st.session_state: st.session_state['is_premium'] = False
@@ -27,16 +33,16 @@ if 'payment_initiated' not in st.session_state: st.session_state['payment_initia
 if 'user' not in st.session_state:
     st.session_state['user'] = {"name": "Trial User", "city": "N/A", "niche": "All", "plan": "Trial", "credits": 0}
 
-# --- AUTH FUNCTIONS ---
+# --- AUTH FUNCTIONS --- (Omitted for brevity, they are stable)
 def login_successful(key):
+    # ... (Login logic remains the same)
     if key == PREMIUM_ACCESS_KEY:
         st.session_state['logged_in'] = True
         st.session_state['is_premium'] = True
         st.session_state['user'] = {"name": "Ravi Kumar", "city": "Pune, India", "niche": "Grocery Stores", "plan": "Pro Plan", "credits": 85}
-        # Reset filters to show all for premium user initially
         st.session_state['filter_city'] = 'All'
         st.session_state['filter_niche'] = 'All'
-        st.session_state['filter_score'] = 0 # Lower to show more leads
+        st.session_state['filter_score'] = 0
         st.session_state['filter_reason'] = 'All'
         st.rerun() 
         return True
@@ -44,10 +50,9 @@ def login_successful(key):
         st.session_state['logged_in'] = True
         st.session_state['is_premium'] = False
         st.session_state['user'] = {"name": "New Trialist", "city": "Pune, India", "niche": "Grocery Stores", "plan": "Trial", "credits": 10}
-        # For trial, set default filters to match their limited view
         st.session_state['filter_city'] = 'Pune, India'
         st.session_state['filter_niche'] = 'Grocery Stores'
-        st.session_state['filter_score'] = 70 # Default min score
+        st.session_state['filter_score'] = 70
         st.session_state['filter_reason'] = 'All'
         st.rerun() 
         return True
@@ -60,46 +65,56 @@ def logout():
     st.session_state['payment_initiated'] = False
     st.rerun()
 
-# --- HELPER FUNCTIONS ---
-def mask_email(email):
-    if '@' in email and len(email.split('@')[0]) > 4:
-        username, domain = email.split('@')
-        return f"{username[:2]}****@{domain}"
-    return email
-def mask_phone(phone):
-    if len(phone) > 8:
-        return f"{phone[:8]}***-{phone[-4:]}"
-    return phone
-def render_hero_card(col, title, deal, count, color):
-    with col.container(border=True, height=140):
-        st.markdown(
-            f'<div style="background-color: {color}; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; font-size: 14px;">{title}</div>', 
-            unsafe_allow_html=True
-        )
-        st.markdown(f"**{deal}**", unsafe_allow_html=True)
-        st.markdown(f"**{count}** Leads Available", help="Count of leads available for this segment.")
+# --- DATA LOADING AND ENRICHMENT (New Live Function) ---
 
-# --------------------------------------------------
-# MOCK LEADS DATA (Full Definition)
-# --------------------------------------------------
-leads_data = [
-    { "Business Name": "BrightStar Marketing", "Phone": "+91 988-123-4567", "Email": "info@brightstarco.com", "Lead Score": 92, "Reason to Contact": "New Business in Your Area", "Attribute": "New Businesses", "Potential Deal": 500, "City": "Pune, India", "Niche": "Grocery Stores" },
-    { "Business Name": "Fresh Mart Deli", "Phone": "+91 876-234-5678", "Email": "deli@freshmart.in", "Lead Score": 88, "Reason to Contact": "No Website – Needs Online Presence", "Attribute": "No Website", "Potential Deal": 750, "City": "Pune, India", "Niche": "Grocery Stores" },
-    { "Business Name": "Quality Grocers", "Phone": "+91 900-345-6789", "Email": "quality@grocers.com", "Lead Score": 85, "Reason to Contact": "High Conversion Potential", "Attribute": "High Conversion", "Potential Deal": 1000, "City": "Pune, India", "Niche": "Grocery Stores" },
-    { "Business Name": "Swift Supplies Co.", "Phone": "+91 765-456-7890", "Email": "sales@swift.in", "Lead Score": 90, "Reason to Contact": "New Startup Seeking Services", "Attribute": "New Businesses", "Potential Deal": 500, "City": "Pune, India", "Niche": "Grocery Stores" },
-    { "Business Name": "Bella Boutique", "Phone": "+91 999-567-8901", "Email": "bella@mailboutique.com", "Lead Score": 87, "Reason to Contact": "No Website – Expand Reach", "Attribute": "No Website", "Potential Deal": 750, "City": "Pune, India", "Niche": "Grocery Stores" },
-    { "Business Name": "Sea View Diner", "Phone": "+91 111-567-8901", "Email": "diner@sea.com", "Lead Score": 65, "Reason to Contact": "Poor Reviews – Easy Pitch", "Attribute": "Poor Reviews", "Potential Deal": 500, "City": "Mumbai", "Niche": "Restaurants" },
-    { "Business Name": "The Curry Pot", "Phone": "+91 222-567-8901", "Email": "curry@pot.com", "Lead Score": 95, "Reason to Contact": "High Revenue Potential", "Attribute": "High Conversion", "Potential Deal": 1500, "City": "Mumbai", "Niche": "Restaurants" },
-    { "Business Name": "Global Mart", "Phone": "+91 333-567-8901", "Email": "global@mart.com", "Lead Score": 75, "Reason to Contact": "New Digital Gap", "Attribute": "No Website", "Potential Deal": 800, "City": "Delhi", "Niche": "Grocery Stores" },
-    { "Business Name": "Local HVAC", "Phone": "+1 555-555-0000", "Email": "hvac@local.com", "Lead Score": 60, "Reason to Contact": "Standard Lead", "Attribute": "Other", "Potential Deal": 300, "City": "Dallas, TX", "Niche": "HVAC Services" }
-]
-df_raw = pd.DataFrame(leads_data)
+@st.cache_data(ttl=600)
+def load_and_enrich_data():
+    """Reads CSV from the pipeline and adds enrichment columns required by the UI."""
+    
+    # Use the proven Pathlib logic to read the file
+    if not PATHLIB_PATH.exists():
+        st.warning(f"Waiting for first pipeline run. No data found at: {PATHLIB_PATH}")
+        return pd.DataFrame()
+    
+    try:
+        df = pd.read_csv(PATHLIB_PATH)
+        
+        # --- ENRICHMENT LOGIC (Moving the mock data logic onto the live data) ---
+        
+        # 1. Clean data and add necessary UI columns
+        if df.empty:
+            return pd.DataFrame()
 
-# MOCK KPI DATA CALCULATION (These counts are from the FULL df_raw, not filtered)
-leads_new_biz_count = len(df_raw[df_raw['Attribute'] == 'New Businesses'])
-leads_no_web_count = len(df_raw[df_raw['Attribute'] == 'No Website'])
-leads_high_conv_count = len(df_raw[df_raw['Attribute'] == 'High Conversion'])
+        # Rename columns from scraper output to UI expectations
+        df.rename(columns={'name': 'Business Name', 'phone': 'Phone', 'email': 'Email', 'category': 'Niche'}, inplace=True)
+        
+        # Create UI-dependent columns using mock logic (since the scraper doesn't provide them)
+        df['City'] = df['address'].apply(lambda x: x.split(',')[-2].strip() if x else 'N/A')
+        df['Reason to Contact'] = np.random.choice(['No Website', 'New Business in Your Area', 'High Conversion Potential'], size=len(df))
+        df['Attribute'] = df['Reason to Contact'].apply(lambda x: 'No Website' if 'Website' in x else 'New Businesses')
 
+        # Generate a simulated Lead Score
+        df['Lead Score'] = np.random.randint(65, 95, size=len(df))
+        df['Potential Deal'] = np.random.randint(300, 1500, size=len(df))
+        
+        # 2. Apply Masking (Must be done after data enrichment)
+        is_premium = st.session_state['is_premium']
+        df['Phone'] = df.apply(lambda row: row['Phone'] if is_premium else mask_phone(row['Phone']), axis=1)
+        df['Email'] = df.apply(lambda row: row['Email'] if is_premium else mask_email(row['Email']), axis=1)
+        
+        return df.sort_values(by='Lead Score', ascending=False).reset_index(drop=True)
+
+    except Exception as e:
+        st.error(f"Error reading or processing live data: {e}")
+        return pd.DataFrame()
+
+# Load the live dataframe at the start:
+df_raw = load_live_data() 
+
+# Calculate KPIs from the live data
+leads_new_biz_count = len(df_raw[df_raw['Attribute'] == 'New Businesses']) if not df_raw.empty else 0
+leads_no_web_count = len(df_raw[df_raw['Attribute'] == 'No Website']) if not df_raw.empty else 0
+leads_high_conv_count = len(df_raw[df_raw['Attribute'] == 'High Conversion']) if not df_raw.empty else 0
 
 # --------------------------------------------------
 # GLOBAL CSS INJECTION (Stable Styling)
