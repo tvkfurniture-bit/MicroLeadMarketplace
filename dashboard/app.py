@@ -27,14 +27,12 @@ def mask_email(email):
     """PII Masking function."""
     if '@' in email and len(email.split('@')[0]) > 4:
         username, domain = email.split('@')
-        # Mask username but keep domain visible
         return f"{username[:2]}****@{domain}"
     return email
 
 def mask_phone(phone):
     """PII Masking function."""
     if len(phone) > 8:
-        # Mask middle numbers
         return f"{phone[:8]}***-{phone[-4:]}"
     return phone
 
@@ -92,23 +90,25 @@ leads_high_conv = len(df_raw[df_raw['Attribute'] == 'High Conversion'])
 # --------------------------------------------------
 st.markdown(f"""
 <style>
-/* Adjust spacing for density */
+/* 1. Adjust spacing for density */
 .stApp {{ padding-top: 20px !important; padding-right: 30px !important; padding-left: 30px !important; }}
 div[data-testid="stVerticalBlock"] > div:first-child {{ padding-top: 0 !important; }}
 .st-emotion-cache-1mnrbfp {{ visibility: hidden !important; }}
 
-/* Custom CSS to color primary CTAs red */
-.red-cta-style > button {{
+/* 2. FIX: Primary Button Color (Overrides Streamlit's default blue to RED) */
+.stButton>button[kind="primary"] {{
     background-color: {COLOR_RED_CTA} !important;
     color: white !important;
     border: none !important;
 }}
 
-/* FIX: Ensure Header Button Alignment */
-div[data-testid="stVerticalBlock"] > div[data-testid="stHorizontalBlock"] {{
+/* 3. FIX: Header Button Alignment (Targets specific columns for vertical alignment) */
+.header-buttons-container {{
+    display: flex;
     align-items: center; 
-    padding-bottom: 0px !important;
+    height: 100%; 
 }}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -143,14 +143,14 @@ with header_cols[1]: # User Info Bar (Cleaned and compacted)
         st.caption(f"**{USER['plan']}** | Credits: {USER['credits']}")
 
 # --- RIGHT BUTTONS (FIXED HORIZONTAL LAYOUT AND COLOR) ---
+# We force the buttons to be horizontal and use primary style for consistency.
+
 with header_cols[2]:
     st.button("Upgrade Plan", key="upgrade_top_bar")
 
 with header_cols[3]:
-    # Use HTML/CSS Class for Refer & Earn button
-    st.markdown('<div class="red-cta-style" data-testid="stVerticalBlock">', unsafe_allow_html=True)
-    st.button("Refer & Earn", key="refer_top_bar")
-    st.markdown('</div>', unsafe_allow_html=True)
+    # Refer & Earn uses type="primary" to be red
+    st.button("Refer & Earn", key="refer_top_bar", type="primary")
 
 with header_cols[4]:
     st.button("☰", use_container_width=True, key="menu_top_bar") 
@@ -170,7 +170,7 @@ with main_content_cols[0]:
     
     hero_cols = st.columns(3)
     
-    # Hero Card Calls 
+    # Hero Card Calls (Stable and Fixed)
     render_hero_card(hero_cols[0], "New Businesses", "$500+ Potential Deal", leads_new_biz, COLOR_BLUE)
     render_hero_card(hero_cols[1], "No Website", "$750+ Potential Deal", leads_no_web, COLOR_GREEN)
     render_hero_card(hero_cols[2], "High Conversion Probability", "$1,000+ Potential Deal", leads_high_conv, COLOR_ORANGE)
@@ -220,22 +220,18 @@ with main_content_cols[1]:
         st.progress(70) 
         st.caption("Contact more leads to increase earnings!")
 
-    # 8. UPGRADE NUDGE 
+    # 8. UPGRADE NUDGE (Button Color Fixed)
     st.markdown("<br>", unsafe_allow_html=True) 
     with st.container(border=True):
         st.markdown("⭐ Unlock Premium Leads")
         st.caption("Get Exclusive High-Value Leads")
-        # Apply the red CTA class to the upgrade button
-        st.markdown('<div class="red-cta-style" data-testid="stVerticalBlock">', unsafe_allow_html=True)
-        st.button("Upgrade Now", key="upgrade_nudge", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Uses type="primary" which is globally red
+        st.button("Upgrade Now", key="upgrade_nudge", use_container_width=True, type="primary")
 
-    # 9. REFERRAL ENGINE
+    # 9. REFERRAL ENGINE (Button Color Fixed)
     st.markdown("<br>", unsafe_allow_html=True) 
     with st.container(border=True):
         st.markdown("📞 Earn Referral Bonuses")
         st.caption("Invite Friends & Earn Rewards")
-        # Apply the red CTA class to the invite button
-        st.markdown('<div class="red-cta-style" data-testid="stVerticalBlock">', unsafe_allow_html=True)
-        st.button("Invite & Earn", key="invite_nudge", use_container_width=True)
-        st.markdown('</div>', unsafe_allow_html=True)
+        # Uses type="primary" which is globally red
+        st.button("Invite & Earn", key="invite_nudge", use_container_width=True, type="primary")
