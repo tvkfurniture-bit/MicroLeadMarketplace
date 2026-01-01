@@ -13,7 +13,7 @@ USER = {
     "plan": "Pro Plan",
     "credits": 85
 }
-USER_IS_PREMIUM = True # Set to True for the full dashboard view
+USER_IS_PREMIUM = True 
 
 # Define color constants (used for Hero Cards)
 COLOR_BLUE = "#3b82f6"
@@ -23,13 +23,17 @@ COLOR_ORANGE = "#f59e0b"
 # --- HELPER FUNCTIONS ---
 
 def mask_email(email):
+    """PII Masking function."""
     if '@' in email and len(email.split('@')[0]) > 4:
         username, domain = email.split('@')
+        # Mask username but keep domain visible
         return f"{username[:2]}****@{domain}"
     return email
 
 def mask_phone(phone):
+    """PII Masking function."""
     if len(phone) > 8:
+        # Mask middle numbers
         return f"{phone[:8]}***-{phone[-4:]}"
     return phone
 
@@ -41,7 +45,7 @@ def render_hero_card(col, title, deal, count, color):
             unsafe_allow_html=True
         )
         st.markdown(f"**{deal}**", unsafe_allow_html=True)
-        st.markdown(f"{count} Leads Available", help="Count of leads available for this segment.")
+        st.markdown(f"**{count}** Leads Available", help="Count of leads available for this segment.")
 
 
 # --------------------------------------------------
@@ -72,10 +76,9 @@ leads_data = [
 
 df_raw = pd.DataFrame(leads_data)
 
-# APPLY PII MASKING DIRECTLY TO THE DISPLAY COLUMNS (Stability Fix)
+# APPLY PII MASKING (Essential for security and compliance simulation)
 df_raw['Phone'] = df_raw['Phone'].apply(mask_phone)
 df_raw['Email'] = df_raw['Email'].apply(mask_email)
-
 
 # MOCK KPI DATA CALCULATION
 leads_new_biz = len(df_raw[df_raw['Attribute'] == 'New Businesses'])
@@ -84,14 +87,14 @@ leads_high_conv = len(df_raw[df_raw['Attribute'] == 'High Conversion'])
 
 
 # --------------------------------------------------
-# GLOBAL CSS INJECTION
+# GLOBAL CSS INJECTION (Density and Aesthetics)
 # --------------------------------------------------
 st.markdown("""
 <style>
 /* Adjust spacing for density */
 .stApp { padding-top: 20px !important; padding-right: 30px !important; padding-left: 30px !important; }
 div[data-testid="stVerticalBlock"] > div:first-child { padding-top: 0 !important; }
-/* Hide default Streamlit sidebar menu */
+/* Hide unnecessary default Streamlit elements */
 .st-emotion-cache-1mnrbfp { visibility: hidden !important; }
 </style>
 """, unsafe_allow_html=True)
@@ -108,25 +111,30 @@ st.set_page_config(
 )
 
 
-# 1. TOP HEADER BAR (Integrated Navigation)
-header_cols = st.columns([0.1, 8, 1, 1, 1])
+# 1. TOP HEADER BAR (FINAL PROFESSIONAL FIX)
+header_cols = st.columns([0.1, 7, 1, 1, 1]) 
 
-with header_cols[0]: 
-    st.markdown("Ⓜ️") 
-with header_cols[1]: 
-    st.markdown(
-        f"<p style='font-size:12px; margin-top: 10px;'>**Micro B2B Lead Marketplace** | Welcome: {USER['name']} | {USER['city']} | Niche: {USER['niche']} | **{USER['plan']}** | Lead Credits: {USER['credits']}</p>",
-        unsafe_allow_html=True
-    )
+with header_cols[0]: # Logo/Icon
+    st.image("https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/Stripe_Logo%2C_revised_2016.svg/1200px-Stripe_Logo%2C_revised_2016.svg.png", width=20) 
+with header_cols[1]: # User Info Bar (Revised for clean separation)
+    meta_cols = st.columns([2, 1.5, 2, 1.5])
+    
+    with meta_cols[0]:
+        st.markdown(f"**Micro B2B Lead Marketplace**", unsafe_allow_html=True)
+    with meta_cols[1]:
+        st.caption(f"Welcome: {USER['name']}")
+    with meta_cols[2]:
+        st.caption(f"{USER['city']} | Niche: {USER['niche']}")
+    with meta_cols[3]:
+        st.caption(f"**{USER['plan']}** | Credits: {USER['credits']}")
+
+# --- RIGHT BUTTONS (The Actions) ---
 with header_cols[2]:
     st.button("Upgrade Plan", use_container_width=True, key="upgrade_top_bar")
 with header_cols[3]:
-    # Use the red color specified in the goal image for CTA
     st.markdown(f"""
         <style>
-            .stButton > button[data-testid*="refer_top_bar"] {{
-                background-color: #f87171; color: white; border: none;
-            }}
+            .stButton > button[data-testid*="refer_top_bar"] {{ background-color: #f87171; color: white; border: none; }}
         </style>
     """, unsafe_allow_html=True)
     st.button("Refer & Earn", key="refer_top_bar")
@@ -165,18 +173,14 @@ with main_content_cols[0]:
     # 4. LEAD INVENTORY TABLE
     st.markdown("### Lead Inventory (High Priority)")
     
+    df_table_view = df_raw[["Business Name", "Phone", "Email", "Lead Score", "Reason to Contact"]].copy()
+
     st.dataframe(
-        df_raw,
+        df_table_view,
         use_container_width=True,
         hide_index=True,
-        # Define column structure for professional look
-        column_order=("Business Name", "Phone", "Email", "Lead Score", "Reason to Contact"),
         column_config={
-            # Uses built-in Streamlit features for visualization
-            "Lead Score": st.column_config.ProgressColumn("Lead Score", format="%d", min_value=0, max_value=100, color="red"),
-            # Hide internal data columns
-            "Attribute": None,
-            "Potential Deal": None
+            "Lead Score": st.column_config.ProgressColumn("Lead Score", format="%d", min_value=0, max_value=100, color="red")
         }
     )
 
@@ -207,7 +211,6 @@ with main_content_cols[1]:
     with st.container(border=True):
         st.markdown("⭐ Unlock Premium Leads")
         st.caption("Get Exclusive High-Value Leads")
-        # Ensure upgrade button uses red color for high urgency
         st.markdown(f"""
             <style>
                 .stButton > button[data-testid*="upgrade_nudge"] {{
