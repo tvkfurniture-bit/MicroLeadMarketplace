@@ -6,7 +6,7 @@ import os
 from pathlib import Path
 
 # --------------------------------------------------
-# CONFIGURATION & FILE PATH SETUP
+# CONFIGURATION & FILE PATH SETUP (LINES 1 - 77)
 # --------------------------------------------------
 PREMIUM_ACCESS_KEY = "30DAYPRO" 
 TRIAL_KEY = "TRIAL-ACCESS-12345" 
@@ -26,10 +26,7 @@ EXTERNAL_REFERRAL_URL = "https://yourapp.com/ref/ravi"
 RELATIVE_LEAD_PATH = 'data/verified/verified_leads.csv'
 PATHLIB_PATH = Path(__file__).parent.parent / RELATIVE_LEAD_PATH
 
-# --------------------------------------------------
-# SESSION STATE AND AUTH FUNCTIONS
-# --------------------------------------------------
-
+# --- SESSION STATE INITIALIZATION ---
 if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
 if 'is_premium' not in st.session_state: st.session_state['is_premium'] = False
 if 'payment_initiated' not in st.session_state: st.session_state['payment_initiated'] = False 
@@ -71,11 +68,7 @@ def go_to_url(url):
     """Function to inject JavaScript for external redirect."""
     st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">', unsafe_allow_html=True)
 
-
-# --------------------------------------------------
-# DATA LOADING AND HELPER FUNCTIONS
-# --------------------------------------------------
-
+# --- HELPER FUNCTIONS ---
 def mask_email(email):
     if '@' in email and len(email.split('@')[0]) > 4:
         username, domain = email.split('@')
@@ -148,7 +141,7 @@ leads_high_conv_count = len(df_raw[df_raw['Attribute'] == 'High Conversion']) if
 
 
 # --------------------------------------------------
-# GLOBAL CSS INJECTION
+# GLOBAL CSS INJECTION (Stable Styling)
 # --------------------------------------------------
 st.markdown(f"""
 <style>
@@ -181,6 +174,42 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="collapsed"
 )
+
+
+# --------------------------------------------------
+# --- AUTHENTICATION GATE ---
+# --------------------------------------------------
+if not st.session_state['logged_in']:
+    st.title("Micro Lead Marketplace Access")
+    st.subheader("Start Your Free Trial — (Zero Dollar Purchase)")
+    
+    auth_cols = st.columns([2, 1, 1])
+    
+    if not st.session_state['payment_initiated']:
+        st.warning("To ensure security, the Trial Key is delivered via email after a secure 0.00 transaction.")
+        auth_cols[0].markdown(f"**1. Get Your Trial Key:** Click below to process your $0.00 secure key generation.", unsafe_allow_html=True)
+        auth_cols[0].link_button("🔑 Process Trial Key via PayPal", url=PAYPAL_TRIAL_LINK, type="primary")
+
+        if auth_cols[1].button("I Completed Payment", key="btn_check_payment"):
+             st.session_state['payment_initiated'] = True
+             st.rerun()
+
+    if st.session_state['payment_initiated'] or not st.session_state['logged_in']:
+        st.markdown("---")
+        
+        if st.session_state['payment_initiated'] and not st.session_state['logged_in']:
+             st.success(f"Key has been generated and sent! Check your inbox for the key: **{TRIAL_KEY}**")
+             st.warning("Please use the key above for immediate login (MOCK).")
+        
+        key_input = auth_cols[0].text_input("Enter Key Received in Email:", type="password", key="auth_key_input")
+        
+        if auth_cols[1].button("Login", key="btn_final_login", type="secondary"):
+            if login_successful(key_input):
+                pass
+            else:
+                st.error("Invalid key or key expired.")
+                
+    st.stop()
 
 
 # --------------------------------------------------
