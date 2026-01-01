@@ -6,18 +6,14 @@ from datetime import datetime
 # --------------------------------------------------
 # CONFIGURATION & USER STATE MANAGEMENT
 # --------------------------------------------------
-# Simulation keys and constants
 PREMIUM_ACCESS_KEY = "30DAYPRO" 
-TRIAL_KEY = "TRIAL-ACCESS-12345" # Unique key generated upon "payment"
+TRIAL_KEY = "TRIAL-ACCESS-12345" 
 TRIAL_LEAD_LIMIT = 5 
 SUBSCRIPTION_PRICE = 30
 COLOR_RED_CTA = "#f87171" 
 COLOR_BLUE = "#3b82f6"
 COLOR_GREEN = "#10b981"
 COLOR_ORANGE = "#f59e0b"
-
-# --- EXTERNAL URLS (Required for PayPal Simulation) ---
-PAYPAL_TRIAL_LINK = "https://www.paypal.com/instant-key-checkout-0dollar" # MOCK PayPal link
 
 # --- SESSION STATE INITIALIZATION ---
 if 'logged_in' not in st.session_state:
@@ -31,22 +27,23 @@ if 'user' not in st.session_state:
         "name": "Trial User", "city": "N/A", "niche": "All", "plan": "Trial", "credits": 0
     }
 
+# --- EXTERNAL URLS (Required for PayPal Simulation) ---
+PAYPAL_TRIAL_LINK = "https://www.paypal.com/instant-key-checkout-0dollar" # MOCK PayPal link
+
 # --- AUTH FUNCTIONS ---
 def login_successful(key):
-    # This logic executes when the user clicks 'Login'
     if key == PREMIUM_ACCESS_KEY:
         st.session_state['logged_in'] = True
         st.session_state['is_premium'] = True
         st.session_state['user'] = {"name": "Ravi Kumar", "city": "Pune, India", "niche": "Grocery Stores", "plan": "Pro Plan", "credits": 85}
-        st.success("Login Successful!")
-        st.rerun() # <--- CRITICAL FIX: Forces Streamlit to jump to the dashboard UI
+        st.rerun() 
         return True
     elif key == TRIAL_KEY:
         st.session_state['logged_in'] = True
         st.session_state['is_premium'] = False
-        st.session_state['user'] = {"name": "New Trialist", "city": "Pune, India", "niche": "All", "plan": "Trial", "credits": 10}
-        st.success("Login Successful!")
-        st.rerun() # <--- CRITICAL FIX: Forces Streamlit to jump to the dashboard UI
+        # FIX: Initialize trial user with the expected niche (Grocery Stores)
+        st.session_state['user'] = {"name": "New Trialist", "city": "Pune, India", "niche": "Grocery Stores", "plan": "Trial", "credits": 10}
+        st.rerun() 
         return True
     return False
 
@@ -60,20 +57,17 @@ def logout():
 # --- HELPER FUNCTIONS ---
 
 def mask_email(email):
-    """PII Masking function."""
     if '@' in email and len(email.split('@')[0]) > 4:
         username, domain = email.split('@')
         return f"{username[:2]}****@{domain}"
     return email
 
 def mask_phone(phone):
-    """PII Masking function."""
     if len(phone) > 8:
         return f"{phone[:8]}***-{phone[-4:]}"
     return phone
 
 def render_hero_card(col, title, deal, count, color):
-    """Renders a single, color-coded KPI card."""
     with col.container(border=True, height=140):
         st.markdown(
             f'<div style="background-color: {color}; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; font-size: 14px;">{title}</div>', 
@@ -86,38 +80,30 @@ def render_hero_card(col, title, deal, count, color):
 # MOCK LEADS DATA (Structured and ready for display)
 # --------------------------------------------------
 leads_data = [
-    # Pune - Grocery (Ravi's target niche)
     { "Business Name": "BrightStar Marketing", "Phone": "+91 988-123-4567", "Email": "info@brightstarco.com", "Lead Score": 92, "Reason to Contact": "New Business in Your Area", "Attribute": "New Businesses", "Potential Deal": 500, "City": "Pune", "Niche": "Grocery Stores" },
     { "Business Name": "Fresh Mart Deli", "Phone": "+91 876-234-5678", "Email": "deli@freshmart.in", "Lead Score": 88, "Reason to Contact": "No Website – Needs Online Presence", "Attribute": "No Website", "Potential Deal": 750, "City": "Pune", "Niche": "Grocery Stores" },
     { "Business Name": "Quality Grocers", "Phone": "+91 900-345-6789", "Email": "quality@grocers.com", "Lead Score": 85, "Reason to Contact": "High Conversion Potential", "Attribute": "High Conversion", "Potential Deal": 1000, "City": "Pune", "Niche": "Grocery Stores" },
     { "Business Name": "Swift Supplies Co.", "Phone": "+91 765-456-7890", "Email": "sales@swift.in", "Lead Score": 90, "Reason to Contact": "New Startup Seeking Services", "Attribute": "New Businesses", "Potential Deal": 500, "City": "Pune", "Niche": "Grocery Stores" },
     { "Business Name": "Bella Boutique", "Phone": "+91 999-567-8901", "Email": "bella@mailboutique.com", "Lead Score": 87, "Reason to Contact": "No Website – Expand Reach", "Attribute": "No Website", "Potential Deal": 750, "City": "Pune", "Niche": "Grocery Stores" },
-    
-    # Mumbai - Restaurants (Expansion niche)
     { "Business Name": "Sea View Diner", "Phone": "+91 111-567-8901", "Email": "diner@sea.com", "Lead Score": 65, "Reason to Contact": "Poor Reviews – Easy Pitch", "Attribute": "Poor Reviews", "Potential Deal": 500, "City": "Mumbai", "Niche": "Restaurants" },
     { "Business Name": "The Curry Pot", "Phone": "+91 222-567-8901", "Email": "curry@pot.com", "Lead Score": 95, "Reason to Contact": "High Revenue Potential", "Attribute": "High Conversion", "Potential Deal": 1500, "City": "Mumbai", "Niche": "Restaurants" },
-    
-    # Delhi - Grocery
     { "Business Name": "Global Mart", "Phone": "+91 333-567-8901", "Email": "global@mart.com", "Lead Score": 75, "Reason to Contact": "New Digital Gap", "Attribute": "No Website", "Potential Deal": 800, "City": "Delhi", "Niche": "Grocery Stores" },
-
-    # Default/Uncategorized (Simulated existing pool)
     { "Business Name": "Local HVAC", "Phone": "+1 555-555-0000", "Email": "hvac@local.com", "Lead Score": 60, "Reason to Contact": "Standard Lead", "Attribute": "Other", "Potential Deal": 300, "City": "Dallas, TX", "Niche": "HVAC Services" }
 ]
-
 df_raw = pd.DataFrame(leads_data)
 
-# APPLY PII MASKING (Conditional on plan)
-df_raw['Phone'] = df_raw.apply(lambda row: row['Phone'] if st.session_state['is_premium'] else mask_phone(row['Phone']), axis=1)
-df_raw['Email'] = df_raw.apply(lambda row: row['Email'] if st.session_state['is_premium'] else mask_email(row['Email']), axis=1)
+# APPLY PII MASKING 
+is_premium = st.session_state['is_premium']
+df_raw['Phone'] = df_raw.apply(lambda row: row['Phone'] if is_premium else mask_phone(row['Phone']), axis=1)
+df_raw['Email'] = df_raw.apply(lambda row: row['Email'] if is_premium else mask_email(row['Email']), axis=1)
 
 # MOCK KPI DATA CALCULATION
 leads_new_biz = len(df_raw[df_raw['Attribute'] == 'New Businesses'])
 leads_no_web = len(df_raw[df_raw['Attribute'] == 'No Website'])
 leads_high_conv = len(df_raw[df_raw['Attribute'] == 'High Conversion'])
 
-
 # --------------------------------------------------
-# GLOBAL CSS INJECTION (Fixes)
+# GLOBAL CSS INJECTION (Density and Aesthetics)
 # --------------------------------------------------
 st.markdown(f"""
 <style>
@@ -125,9 +111,10 @@ st.markdown(f"""
 .stApp {{ padding-top: 20px !important; padding-right: 30px !important; padding-left: 30px !important; }}
 div[data-testid="stVerticalBlock"] > div:first-child {{ padding-top: 0 !important; }}
 .st-emotion-cache-1mnrbfp {{ visibility: hidden !important; }}
-
 /* Fix Primary Button Color to Red CTA */
 .stButton>button[kind="primary"] {{ background-color: {COLOR_RED_CTA} !important; color: white !important; border: none !important; }}
+/* Fix Header Alignment */
+.header-buttons-container {{ display: flex; align-items: center; height: 100%; }}
 </style>
 """, unsafe_allow_html=True)
 
@@ -144,36 +131,27 @@ st.set_page_config(
 
 
 # --------------------------------------------------
-# --- APPLICATION START: AUTHENTICATION GATE ---
+# --- AUTHENTICATION GATE ---
 # --------------------------------------------------
-
 if not st.session_state['logged_in']:
     st.title("Micro Lead Marketplace Access")
     st.subheader("Start Your Free Trial — (Zero Dollar Purchase)")
     
     auth_cols = st.columns([2, 1, 1])
     
-    # 1. Trial Key Acquisition Flow (Zero Dollar PayPal Purchase)
     if not st.session_state['payment_initiated']:
         st.warning("To ensure security, the Trial Key is delivered via email after a secure 0.00 transaction.")
-        
-        auth_cols[0].markdown(
-            f"**1. Get Your Trial Key:** Click below to process your $0.00 secure key generation.", 
-            unsafe_allow_html=True
-        )
+        auth_cols[0].markdown(f"**1. Get Your Trial Key:** Click below to process your $0.00 secure key generation.", unsafe_allow_html=True)
         auth_cols[0].link_button("🔑 Process Trial Key via PayPal", url=PAYPAL_TRIAL_LINK, type="primary")
 
         if auth_cols[1].button("I Completed Payment", key="btn_check_payment"):
-             # User returns from PayPal link and clicks this button
              st.session_state['payment_initiated'] = True
              st.rerun()
 
-    # 2. Key Input/Final Login
     if st.session_state['payment_initiated'] or not st.session_state['logged_in']:
         st.markdown("---")
         
         if st.session_state['payment_initiated'] and not st.session_state['logged_in']:
-             # Simulation of key being sent
              st.success(f"Key has been generated and sent! Check your inbox for the key: **{TRIAL_KEY}**")
              st.warning("Please use the key above for immediate login (MOCK).")
         
@@ -181,7 +159,7 @@ if not st.session_state['logged_in']:
         
         if auth_cols[1].button("Login", key="btn_final_login", type="secondary"):
             if login_successful(key_input):
-                st.success("Login Successful!")
+                pass
             else:
                 st.error("Invalid key or key expired.")
                 
@@ -215,6 +193,7 @@ st.markdown("## Today’s Best Money Opportunities")
 main_content_cols = st.columns([9, 3])
 
 # --- DYNAMIC FILTER STATE ---
+# Initialize session filters based on user's default niche/city
 if 'filter_city' not in st.session_state:
     st.session_state['filter_city'] = st.session_state['user']['city']
 if 'filter_niche' not in st.session_state:
@@ -229,6 +208,8 @@ if 'filter_reason' not in st.session_state:
 df_filtered = df_raw.copy()
 
 is_premium = st.session_state['is_premium']
+
+# APPLY FILTERS based on session state
 if is_premium:
     if st.session_state['filter_city'] != 'All':
         df_filtered = df_filtered[df_filtered['City'] == st.session_state['filter_city']]
@@ -236,10 +217,17 @@ if is_premium:
         df_filtered = df_filtered[df_filtered['Niche'] == st.session_state['filter_niche']]
     if st.session_state['filter_score'] > 0:
         df_filtered = df_filtered[df_filtered['Lead Score'] >= st.session_state['filter_score']]
+    # If the user is premium, they see the full filtered list
+    total_leads_for_display = len(df_filtered)
 else:
-    # Trial Logic: Limit leads and enforce Ravi's default niche
+    # Trial Logic: Enforce Ravi's default niche and limit leads
     df_filtered = df_filtered[df_filtered['City'] == st.session_state['user']['city']]
     df_filtered = df_filtered[df_filtered['Niche'] == st.session_state['user']['niche']]
+    
+    # We must calculate the total available for the trial niche for accurate KPI display
+    total_leads_for_display = len(df_filtered)
+    
+    # Finally, apply the display limit
     df_filtered = df_filtered.head(TRIAL_LEAD_LIMIT)
 
 
@@ -266,25 +254,33 @@ with main_content_cols[0]:
     # 3. FILTER CONTROLS (FUNCTIONAL)
     st.markdown("### Filter Leads & Inventory")
     
+    # Determine the index for the select boxes to ensure they show the user's current city/niche
+    city_options = df_raw['City'].unique().tolist()
+    niche_options = df_raw['Niche'].unique().tolist()
+    
+    city_index = city_options.index(st.session_state['user']['city']) if st.session_state['user']['city'] in city_options else 0
+    niche_index = niche_options.index(st.session_state['user']['niche']) if st.session_state['user']['niche'] in niche_options else 0
+    
     filter_cols = st.columns(4)
-    filter_cols[0].selectbox("City", df_raw['City'].unique(), key="filter_city", disabled=not is_premium)
-    filter_cols[1].selectbox("Niche", df_raw['Niche'].unique(), key="filter_niche", disabled=not is_premium)
+    filter_cols[0].selectbox("City", city_options, key="filter_city", disabled=not is_premium, index=city_index)
+    filter_cols[1].selectbox("Niche", niche_options, key="filter_niche", disabled=not is_premium, index=niche_index)
     filter_cols[2].slider("Min Score", 0, 100, st.session_state['filter_score'], key="filter_score", disabled=not is_premium)
     filter_cols[3].selectbox("Reason", ['All', 'New Business', 'No Website'], key="filter_reason", disabled=not is_premium)
     
     # 4. LEAD INVENTORY TABLE
     st.markdown("### Lead Inventory (High Priority)")
     
-    df_table_view = df_filtered.copy()
-    
-    st.dataframe(
-        df_table_view[["Business Name", "Phone", "Email", "Lead Score", "Reason to Contact"]],
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Lead Score": st.column_config.ProgressColumn("Lead Score", format="%d", min_value=0, max_value=100, color="red")
-        }
-    )
+    if total_leads_for_display == 0:
+        st.warning("No leads found for your current criteria.")
+    else:
+        st.dataframe(
+            df_filtered[["Business Name", "Phone", "Email", "Lead Score", "Reason to Contact"]],
+            use_container_width=True,
+            hide_index=True,
+            column_config={
+                "Lead Score": st.column_config.ProgressColumn("Lead Score", format="%d", min_value=0, max_value=100, color="red")
+            }
+        )
 
 
 # --- RIGHT COLUMN: OUTREACH & EARNINGS PANEL ---
