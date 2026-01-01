@@ -1,10 +1,14 @@
 # Data Processing & Core Utilities
 pandas
-requests
 PyYAML
 
-# Web Interaction 
-beautifulsoup4
+# Web Interaction (Industrial Grade)
+playwright
+# Drivers for Playwright (must be installed via shell commands in GitHub Actions)
+
+# Database Connection
+SQLAlchemy
+psycopg2-binary 
 
 # Dashboard
 streamlit
