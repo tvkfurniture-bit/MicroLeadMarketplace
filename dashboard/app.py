@@ -16,7 +16,9 @@ COLOR_GREEN = "#10b981"
 COLOR_ORANGE = "#f59e0b"
 
 # --- EXTERNAL URLS (Mockup) ---
-PAYPAL_TRIAL_LINK = "https://www.paypal.com/instant-key-checkout-0dollar" 
+PAYPAL_TRIAL_LINK = "https://www.paypal.com/instant-key-checkout-0dollar" # MOCK PayPal link
+EXTERNAL_UPGRADE_URL = "https://yourstripe.com/checkout/premium" # MOCK Checkout URL
+EXTERNAL_REFERRAL_URL = "https://yourapp.com/ref/ravi" # MOCK Referral Link
 
 # --- SESSION STATE INITIALIZATION ---
 if 'logged_in' not in st.session_state: st.session_state['logged_in'] = False
@@ -49,6 +51,11 @@ def logout():
     st.rerun()
 
 # --- HELPER FUNCTIONS (Simplified and stable) ---
+
+def go_to_url(url):
+    """Function to inject JavaScript for external redirect."""
+    st.markdown(f'<meta http-equiv="refresh" content="0; url={url}">', unsafe_allow_html=True)
+    
 def mask_email(email):
     if '@' in email and len(email.split('@')[0]) > 4:
         username, domain = email.split('@')
@@ -181,11 +188,15 @@ with header_cols[1]: # User Info Bar
     with meta_cols[3]: st.caption(f"**{st.session_state['user']['plan']}** | Credits: {st.session_state['user']['credits']}")
 
 # --- RIGHT BUTTONS (FUNCTIONAL LINKS) ---
-with header_cols[2]: st.button("Upgrade Plan", key="upgrade_top_bar") # Standard Button
+with header_cols[2]: 
+    # UPGRADE PLAN: Redirect to payment page
+    if st.button("Upgrade Plan", key="upgrade_top_bar"):
+        go_to_url(EXTERNAL_UPGRADE_URL)
 
-with header_cols[3]: 
-    # Refer & Earn uses type="primary" which is globally red
-    st.button("Refer & Earn", key="refer_top_bar", type="primary")
+with header_cols[3]:
+    # REFER & EARN: Redirect to referral page (using primary red style)
+    if st.button("Refer & Earn", key="refer_top_bar", type="primary"):
+        go_to_url(EXTERNAL_REFERRAL_URL)
 
 with header_cols[4]:
     st.button("☰", use_container_width=True, key="menu_top_bar", on_click=logout) 
