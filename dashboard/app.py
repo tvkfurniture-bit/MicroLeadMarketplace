@@ -33,15 +33,20 @@ if 'user' not in st.session_state:
 
 # --- AUTH FUNCTIONS ---
 def login_successful(key):
+    # This logic executes when the user clicks 'Login'
     if key == PREMIUM_ACCESS_KEY:
         st.session_state['logged_in'] = True
         st.session_state['is_premium'] = True
         st.session_state['user'] = {"name": "Ravi Kumar", "city": "Pune, India", "niche": "Grocery Stores", "plan": "Pro Plan", "credits": 85}
+        st.success("Login Successful!")
+        st.rerun() # <--- CRITICAL FIX: Forces Streamlit to jump to the dashboard UI
         return True
     elif key == TRIAL_KEY:
         st.session_state['logged_in'] = True
         st.session_state['is_premium'] = False
         st.session_state['user'] = {"name": "New Trialist", "city": "Pune, India", "niche": "All", "plan": "Trial", "credits": 10}
+        st.success("Login Successful!")
+        st.rerun() # <--- CRITICAL FIX: Forces Streamlit to jump to the dashboard UI
         return True
     return False
 
