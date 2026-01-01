@@ -15,6 +15,11 @@ COLOR_BLUE = "#3b82f6"
 COLOR_GREEN = "#10b981"
 COLOR_ORANGE = "#f59e0b"
 
+# --- EXTERNAL URLS (Required for PayPal Simulation) ---
+PAYPAL_TRIAL_LINK = "https://www.paypal.com/instant-key-checkout-0dollar" # MOCK PayPal link
+EXTERNAL_UPGRADE_URL = "https://yourstripe.com/checkout/premium" # MOCK Checkout URL
+EXTERNAL_REFERRAL_URL = "https://yourapp.com/ref/ravi" # MOCK Referral Link
+
 # --- SESSION STATE INITIALIZATION ---
 if 'logged_in' not in st.session_state:
     st.session_state['logged_in'] = False
@@ -27,9 +32,6 @@ if 'user' not in st.session_state:
         "name": "Trial User", "city": "N/A", "niche": "All", "plan": "Trial", "credits": 0
     }
 
-# --- EXTERNAL URLS (Required for PayPal Simulation) ---
-PAYPAL_TRIAL_LINK = "https://www.paypal.com/instant-key-checkout-0dollar" # MOCK PayPal link
-
 # --- AUTH FUNCTIONS ---
 def login_successful(key):
     if key == PREMIUM_ACCESS_KEY:
@@ -41,7 +43,6 @@ def login_successful(key):
     elif key == TRIAL_KEY:
         st.session_state['logged_in'] = True
         st.session_state['is_premium'] = False
-        # FIX: Initialize trial user with the expected niche (Grocery Stores)
         st.session_state['user'] = {"name": "New Trialist", "city": "Pune, India", "niche": "Grocery Stores", "plan": "Trial", "credits": 10}
         st.rerun() 
         return True
@@ -77,7 +78,7 @@ def render_hero_card(col, title, deal, count, color):
         st.markdown(f"**{count}** Leads Available", help="Count of leads available for this segment.")
 
 # --------------------------------------------------
-# MOCK LEADS DATA (Structured and ready for display)
+# MOCK LEADS DATA 
 # --------------------------------------------------
 leads_data = [
     { "Business Name": "BrightStar Marketing", "Phone": "+91 988-123-4567", "Email": "info@brightstarco.com", "Lead Score": 92, "Reason to Contact": "New Business in Your Area", "Attribute": "New Businesses", "Potential Deal": 500, "City": "Pune", "Niche": "Grocery Stores" },
@@ -102,8 +103,9 @@ leads_new_biz = len(df_raw[df_raw['Attribute'] == 'New Businesses'])
 leads_no_web = len(df_raw[df_raw['Attribute'] == 'No Website'])
 leads_high_conv = len(df_raw[df_raw['Attribute'] == 'High Conversion'])
 
+
 # --------------------------------------------------
-# GLOBAL CSS INJECTION (Density and Aesthetics)
+# GLOBAL CSS INJECTION (FINAL FIXES)
 # --------------------------------------------------
 st.markdown(f"""
 <style>
@@ -111,38 +113,26 @@ st.markdown(f"""
 .stApp {{ padding-top: 20px !important; padding-right: 30px !important; padding-left: 30px !important; }}
 div[data-testid="stVerticalBlock"] > div:first-child {{ padding-top: 0 !important; }}
 .st-emotion-cache-1mnrbfp {{ visibility: hidden !important; }}
+
 /* Fix Primary Button Color to Red CTA */
-.stButton>button[kind="primary"] {{ background-color: {COLOR_RED_CTA} !important; color: white !important; border: none !important; }}
-/* Fix Header Alignment */
-.header-buttons-container {{ display: flex; align-items: center; height: 100%; }}
-</style>
-""", unsafe_allow_html=True)
-
-/* Custom style for the Upgrade Plan link button */
-.upgrade-link-button {{
-    display: block;
-    text-align: center;
-    border: 1px solid #ccc;
-    border-radius: 0.5rem;
-    padding: 0.35rem; /* Adjust padding to match st.button size */
-    text-decoration: none;
-    color: #4B4B4B; /* Dark grey color */
-    font-weight: 500;
-}}
-
-/* Custom style for the Refer & Earn button (Primary Red) */
-.refer-link-button {{
-    display: block;
-    text-align: center;
-    background-color: {COLOR_RED_CTA};
+.stButton>button[kind="primary"] {{
+    background-color: {COLOR_RED_CTA} !important;
     color: white !important;
-    border-radius: 0.5rem;
-    padding: 0.35rem; /* Adjust padding to match st.button size */
-    text-decoration: none;
-    font-weight: 500;
+    border: none !important;
 }}
+
+/* FIX: Header Button Alignment (Targets specific container to align vertically) */
+.header-buttons-container {{
+    display: flex;
+    align-items: center; 
+    height: 100%; 
+}}
+
+/* FIX: Increase Main Title Font Size */
+h1.st-emotion-cache-18nn76w {{ font-size: 24px !important; }}
 </style>
 """, unsafe_allow_html=True)
+
 
 # --------------------------------------------------
 # PAGE CONFIG
@@ -206,24 +196,16 @@ with header_cols[1]: # User Info Bar
     with meta_cols[2]: st.caption(f"{st.session_state['user']['city']} | Niche: {st.session_state['user']['niche']}")
     with meta_cols[3]: st.caption(f"**{st.session_state['user']['plan']}** | Credits: {st.session_state['user']['credits']}")
 
-# --- RIGHT BUTTONS (FUNCTIONAL LINKS) ---
+# --- RIGHT BUTTONS (FIXED HORIZONTAL LAYOUT AND COLOR) ---
+with header_cols[2]: 
+    # Upgrade Plan uses standard Streamlit button style
+    st.button("Upgrade Plan", key="upgrade_top_bar")
 
-with header_cols[2]:
-    # UPGRADE PLAN (Functional Link)
-    st.markdown(
-        f'<a href="{EXTERNAL_UPGRADE_URL}" target="_blank" class="upgrade-link-button">Upgrade Plan</a>',
-        unsafe_allow_html=True
-    )
-
-with header_cols[3]:
-    # REFER & EARN (Functional Link using Red Style)
-    st.markdown(
-        f'<a href="{EXTERNAL_REFERRAL_URL}" target="_blank" class="refer-link-button">Refer & Earn</a>',
-        unsafe_allow_html=True
-    )
+with header_cols[3]: 
+    # Refer & Earn uses type="primary" which is globally red
+    st.button("Refer & Earn", key="refer_top_bar", type="primary")
 
 with header_cols[4]:
-    # Hamburger Menu (using standard button as it controls internal state)
     st.button("☰", use_container_width=True, key="menu_top_bar", on_click=logout) 
 
 st.markdown("---")
@@ -233,7 +215,6 @@ st.markdown("## Today’s Best Money Opportunities")
 main_content_cols = st.columns([9, 3])
 
 # --- DYNAMIC FILTER STATE ---
-# Initialize session filters based on user's default niche/city
 if 'filter_city' not in st.session_state:
     st.session_state['filter_city'] = st.session_state['user']['city']
 if 'filter_niche' not in st.session_state:
@@ -246,7 +227,6 @@ if 'filter_reason' not in st.session_state:
 
 # --- DYNAMIC FILTERING LOGIC ---
 df_filtered = df_raw.copy()
-
 is_premium = st.session_state['is_premium']
 
 # APPLY FILTERS based on session state
@@ -257,23 +237,21 @@ if is_premium:
         df_filtered = df_filtered[df_filtered['Niche'] == st.session_state['filter_niche']]
     if st.session_state['filter_score'] > 0:
         df_filtered = df_filtered[df_filtered['Lead Score'] >= st.session_state['filter_score']]
-    # If the user is premium, they see the full filtered list
     total_leads_for_display = len(df_filtered)
 else:
     # Trial Logic: Enforce Ravi's default niche and limit leads
     df_filtered = df_filtered[df_filtered['City'] == st.session_state['user']['city']]
     df_filtered = df_filtered[df_filtered['Niche'] == st.session_state['user']['niche']]
     
-    # We must calculate the total available for the trial niche for accurate KPI display
     total_leads_for_display = len(df_filtered)
-    
-    # Finally, apply the display limit
     df_filtered = df_filtered.head(TRIAL_LEAD_LIMIT)
 
 
 # --- LEFT COLUMN: HERO CARDS & TABLE ---
 with main_content_cols[0]:
+    
     hero_cols = st.columns(3)
+    
     render_hero_card(hero_cols[0], "New Businesses", "$500+ Potential Deal", leads_new_biz, COLOR_BLUE)
     render_hero_card(hero_cols[1], "No Website", "$750+ Potential Deal", leads_no_web, COLOR_GREEN)
     render_hero_card(hero_cols[2], "High Conversion Probability", "$1,000+ Potential Deal", leads_high_conv, COLOR_ORANGE)
@@ -294,7 +272,6 @@ with main_content_cols[0]:
     # 3. FILTER CONTROLS (FUNCTIONAL)
     st.markdown("### Filter Leads & Inventory")
     
-    # Determine the index for the select boxes to ensure they show the user's current city/niche
     city_options = df_raw['City'].unique().tolist()
     niche_options = df_raw['Niche'].unique().tolist()
     
