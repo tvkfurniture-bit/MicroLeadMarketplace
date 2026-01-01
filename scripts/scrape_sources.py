@@ -91,17 +91,16 @@ def execute_scrape(target):
         email_status = "verified" if i % 10 != 0 else "unverified"
         
         scraped_leads.append({
-            # Standard columns
-            'Business Name': f"{niche.title().split()[0]} Shop {i+1}",
-            'Niche': niche,
-            'City': city,
-            'Phone': f"+1 {random.randint(100, 999)}-{random.randint(100, 999)}-{random.randint(1000, 9999)}",
-            'Email': f"{unique_id}@{city.lower().replace(' ', '')}.com",
-            'Reason to Contact': 'New Lead Found',
+            'Business Name': f"Business Alpha {i}", # NEW NAME
+            'Niche': query,                        # NEW NAME
+            'City': SCRAPE_CITY,                   # NEW NAME (Simplified)
+            'Phone': f"+1 555-123-{1000 + i}",     # NEW NAME
+            'Email': f"test.alpha{i}@servicecorp.com", # NEW NAME
             
-            # Enrichment columns needed by the Dashboard UI
-            'Lead Score': random.randint(65, 95),
-            'Attribute': random.choice(['No Website', 'New Businesses', 'High Conversion']),
+            # CRITICAL ENRICHMENT COLUMNS (MOCKING them here)
+            'Lead Score': 85,
+            'Reason to Contact': 'New Lead Found',
+            'Attribute': 'New Businesses',
             
             'source_url': f"http://source.com/lead_{i}",
             'scraped_date': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
