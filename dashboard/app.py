@@ -109,7 +109,7 @@ def load_and_enrich_data():
         return pd.DataFrame()
 
 # Load the live dataframe at the start:
-df_raw = load_live_data() 
+
 
 # Calculate KPIs from the live data
 leads_new_biz_count = len(df_raw[df_raw['Attribute'] == 'New Businesses']) if not df_raw.empty else 0
