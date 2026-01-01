@@ -1,4 +1,4 @@
-name: Lead Pipeline Automation
+name: Production Lead Pipeline
 
 on:
   schedule:
@@ -7,81 +7,39 @@ on:
   workflow_dispatch:
     # Allows manual triggering for testing
 
+env:
+  # CRITICAL: This variable holds the PostgreSQL connection string 
+  # It MUST be set in your GitHub Secrets as "DATABASE_URL" 
+  DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
 jobs:
-  run_lead_pipeline:
+  run_production_pipeline:
     runs-on: ubuntu-latest
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          # Use the GH_TOKEN secret to allow the workflow to push changes
-          token: ${{ secrets.GH_TOKEN }}
+        # We don't need GH_TOKEN anymore as we are not committing files.
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: Install dependencies
+      - name: Install dependencies (Requires Playwright/SQLAlchemy/psycopg2)
         run: pip install -r requirements.txt
 
-      - name: Create Data Directories
-        # Ensure directories exist before the scripts run
-        run: |
-          mkdir -p data/raw
-          mkdir -p data/verified
+      - name: Install Playwright Browsers (Required for real scraping)
+        # This installs the necessary browser engine for the scraping script to work
+        run: playwright install chromium --with-deps
 
-      - name: Run Scraper
-        # Creates data/raw/latest_raw_scrape.csv
-        run: python scripts/scrape_sources.py
-      
-      - name: Run Cleaner and Verifier
-        # Reads raw data, cleans it, and creates data/verified/verified_leads.csv
-        run: python scripts/clean_verify.py
-      
-      # --- CRITICAL DIAGNOSTIC STEP ---
-      - name: Diagnostic Check - Verify CSV Creation
-        id: diagnostic
-        run: |
-          echo "Checking for verified leads CSV..."
-          CSV_FILE="data/verified/verified_leads.csv"
-          if [ -f $CSV_FILE ]; then
-            echo "File found! Displaying head:"
-            head $CSV_FILE
-            # Proceed to commit step
-          else
-            echo "CRITICAL: File $CSV_FILE NOT FOUND. Check 'Run Cleaner and Verifier' logs for Python traceback."
-            exit 1 # Stop the workflow if the main artifact is missing
-          fi
-      # --- END DIAGNOSTIC STEP ---
+      - name: Run Production Scraper and Verification
+        # This single script now handles:
+        # 1. Scraping data via Playwright.
+        # 2. Cleaning/Verifying data.
+        # 3. Inserting data directly into the PostgreSQL database using $DATABASE_URL.
+        run: python scripts/real_scraper.py 
+        # Note: We assume 'real_scraper.py' is the updated name for the combined script.
 
-      - name: Commit and Push new leads
-        id: commit
-        # The Diagnostic step ensures the file exists before we try to commit
-        run: |
-          # Check if data files changed (i.e., new leads were processed)
-          if git diff --quiet data/verified/verified_leads.csv; then
-            # New GITHUB_OUTPUT syntax to pass variable state
-            echo "commit_needed=false" >> $GITHUB_OUTPUT 
-          else
-            echo "commit_needed=true" >> $GITHUB_OUTPUT
-            
-            # Configure Git user for the commit
-            git config --global user.name 'github-actions[bot]'
-            git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-            
-            # Commit and push the new data file
-            git add data/verified/verified_leads.csv
-            git commit -m "🤖 AUTO: Updated verified lead data [skip ci]"
-            git push
-          fi
-    
-      - name: Display Commit Status
-        # Checks the output set by the previous step (using the new syntax)
-        if: steps.commit.outputs.commit_needed == 'true'
-        run: echo "✅ Successfully committed and pushed new verified leads. Marketplace updated."
-        
-      - name: Display No Change Status
-        if: steps.commit.outputs.commit_needed == 'false'
-        run: echo "ℹ️ No new verified leads found or data unchanged in this run. Skipping commit."
+      - name: Database Update Success
+        run: echo "✅ Pipeline completed. Data sent directly to PostgreSQL database. Streamlit app will update automatically."
