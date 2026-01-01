@@ -137,7 +137,13 @@ def load_live_data():
         df.rename(columns={'name': 'Business Name', 'phone': 'Phone', 'email': 'Email', 'category': 'Niche'}, inplace=True)
         
         # Create UI-dependent columns (MOCK LOGIC)
-        df['City'] = df['address'].apply(lambda x: x.split(',')[-2].strip() if x else 'N/A')
+        # FIX: Remove the obsolete address parsing logic and rely on the City/Niche columns
+        # already created by the scraper.
+        df['City'] = df['City'].fillna('N/A')
+        df['Niche'] = df['Niche'].fillna('N/A')
+        
+        # Now, create the 'city_state' column required by the filter from the clean City column:
+        df['city_state'] = df['City'].astype(str)
         df['Reason to Contact'] = np.random.choice(['No Website', 'New Business in Your Area', 'High Conversion Potential'], size=len(df))
         df['Attribute'] = df['Reason to Contact'].apply(lambda x: 'No Website' if 'Website' in x else 'New Businesses')
 
