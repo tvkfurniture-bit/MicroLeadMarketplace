@@ -4,6 +4,7 @@ import numpy as np
 import os
 from pathlib import Path
 from datetime import datetime
+import time # Added for simulating payment delays
 
 # --------------------------------------------------
 # CONFIGURATION & FILE PATH SETUP
@@ -21,6 +22,7 @@ COLOR_ORANGE = "#f59e0b"
 PAYPAL_TRIAL_LINK = "https://www.paypal.com/instant-key-checkout-0dollar" 
 EXTERNAL_UPGRADE_URL = "https://yourstripe.com/checkout/premium" 
 EXTERNAL_REFERRAL_URL = "https://yourapp.com/ref/ravi" 
+REQUEST_QUEUE_PATH = Path('data/requests/order_queue.csv') # Path for custom order requests
 
 # --- FILE PATH SETUP (Connects to the GitHub Action output) ---
 RELATIVE_LEAD_PATH = 'data/verified/verified_leads.csv'
@@ -82,11 +84,6 @@ def mask_email(email):
         return f"{username[:2]}****@{domain}"
     return email
 
-def save_lead_request(niche, location, max_count):
-    # This mock function simulates writing to the data/requests/order_queue.csv
-    # ... (code implementation remains the same from V2.1) ...
-    return True # Simulate success
-
 def mask_phone(phone):
     if len(phone) > 8:
         return f"{phone[:8]}***-{phone[-4:]}"
@@ -100,6 +97,28 @@ def render_hero_card(col, title, deal, count, color):
         )
         st.markdown(f"**{deal}**", unsafe_allow_html=True)
         st.markdown(f"**{count}** Leads Available", help="Count of leads available for this segment.")
+
+def save_lead_request(niche, location, max_count, user_name):
+    """Saves the user's custom order to the order_queue.csv file for the GitHub Action."""
+    new_request = pd.DataFrame({
+        'timestamp': [datetime.now().strftime('%Y-%m-%d %H:%M:%S')],
+        'niche': [niche],
+        'location': [location],
+        'max_count': [max_count],
+        'user_id': [user_name],
+        'status': ['PENDING_SCRAPE']
+    })
+    
+    # Ensure the data/requests directory exists
+    os.makedirs(REQUEST_QUEUE_PATH.parent, exist_ok=True)
+    
+    # Append to the CSV
+    if REQUEST_QUEUE_PATH.exists():
+        new_request.to_csv(REQUEST_QUEUE_PATH, mode='a', header=False, index=False)
+    else:
+        new_request.to_csv(REQUEST_QUEUE_PATH, index=False)
+        
+    return True
 
 
 @st.cache_data(ttl=600)
@@ -116,9 +135,6 @@ def load_live_data():
             return pd.DataFrame()
 
         # --- ENRICHMENT LOGIC (Adds UI-required columns not in the raw CSV) ---
-        
-        # Rename columns from scraper output to UI expectations
-        # Assumes scraper outputs: name, phone, email, category, address
         df.rename(columns={'name': 'Business Name', 'phone': 'Phone', 'email': 'Email', 'category': 'Niche'}, inplace=True)
         
         # Create UI-dependent columns (MOCK LOGIC)
@@ -142,7 +158,7 @@ def load_live_data():
 
 
 # --------------------------------------------------
-# GLOBAL DATA LOAD (This runs once when the script starts)
+# GLOBAL DATA LOAD 
 # --------------------------------------------------
 df_raw = load_live_data() 
 
@@ -289,33 +305,6 @@ else:
     total_leads_for_display = len(df_current_view) 
     df_filtered_for_display = df_current_view.head(TRIAL_LEAD_LIMIT)
 
-st.markdown("---")
-    st.markdown("### 🗺️ Custom Lead Request (Scale Your Business)")
-    st.caption("Request new niches and locations not currently in our inventory.")
-
-    with st.form("custom_lead_order", clear_on_submit=True):
-        f_cols = st.columns(3)
-        niche_input = f_cols[0].text_input("Industry Keyword (e.g., Handyman Services)")
-        location_input = f_cols[1].text_input("City, Country (e.g., Kolkata, India)")
-        max_leads_input = st.slider("Max Leads Desired", min_value=50, max_value=5000, step=50, value=500)
-        
-        submitted = st.form_submit_button("Submit Custom Order (Charge Credits/Invoice)")
-        
-        if submitted:
-            if niche_input and location_input:
-                # --- Simulate successful credit charge/invoice creation here ---
-                
-                if save_lead_request(niche_input, location_input, max_leads_input):
-                    st.success(
-                        f"✅ Order for {niche_input} in {location_input} submitted! "
-                        f"Fulfillment will commence immediately in the next pipeline run (approx 24-48 hours)."
-                    )
-                else:
-                    st.error("Error saving request.")
-            else:
-                st.error("Please fill in both Industry Keyword and Location.")
-
-    st.markdown("---")
 
 # --- LEFT COLUMN: HERO CARDS & TABLE ---
 with main_content_cols[0]:
@@ -354,6 +343,34 @@ with main_content_cols[0]:
     filter_cols[1].selectbox("Niche", niche_options, key="filter_niche", disabled=not is_premium, on_change=st.rerun, index=niche_index)
     filter_cols[2].slider("Min Score", 0, 100, st.session_state['filter_score'], key="filter_score", disabled=not is_premium, on_change=st.rerun)
     filter_cols[3].selectbox("Reason", reason_options, key="filter_reason", disabled=not is_premium, on_change=st.rerun, index=reason_index)
+    
+    # --- 3.5 CUSTOM ORDER FORM (Visible only to Premium Users) ---
+    if is_premium:
+        st.markdown("---")
+        st.markdown("### 🗺️ Custom Lead Request (Scale Your Business)")
+        st.caption("Request new niches and locations not currently in our inventory.")
+        
+        with st.form("custom_lead_order", clear_on_submit=True):
+            f_cols = st.columns(3)
+            niche_input = f_cols[0].text_input("Industry Keyword (e.g., Handyman Services)")
+            location_input = f_cols[1].text_input("City, Country (e.g., Kolkata, India)")
+            max_leads_input = st.slider("Max Leads Desired", min_value=50, max_value=5000, step=50, value=500)
+            
+            submitted = st.form_submit_button("Submit Custom Order (Charge Credits/Invoice)")
+            
+            if submitted:
+                if niche_input and location_input:
+                    # Execute mock logic to save request
+                    if save_lead_request(niche_input, location_input, max_leads_input, st.session_state['user']['name']):
+                        st.success(
+                            f"✅ Order for {niche_input} in {location_input} submitted! "
+                            f"Fulfillment will commence immediately in the next pipeline run (approx 24-48 hours)."
+                        )
+                    else:
+                        st.error("Error saving request.")
+                else:
+                    st.error("Please fill in both Industry Keyword and Location.")
+        st.markdown("---")
     
     # 4. LEAD INVENTORY TABLE
     st.markdown("### Lead Inventory (High Priority)")
