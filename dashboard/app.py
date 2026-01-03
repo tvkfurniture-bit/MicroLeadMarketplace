@@ -21,9 +21,7 @@ COLOR_ORANGE = "#f59e0b"
 PAYPAL_TRIAL_LINK = "https://www.paypal.com/instant-key-checkout-0dollar" 
 EXTERNAL_UPGRADE_URL = "https://yourstripe.com/checkout/premium" 
 EXTERNAL_REFERRAL_URL = "https://yourapp.com/ref/ravi" 
-REQUEST_QUEUE_PATH = Path('data/requests/order_queue.csv')
-
-# --- FILE PATH SETUP (Connects to the GitHub Action output) ---
+REQUEST_QUEUE_PATH = Path('data/requests/order_queue.csv') # Path to the custom orders file
 RELATIVE_LEAD_PATH = 'data/verified/verified_leads.csv'
 PATHLIB_PATH = Path(__file__).parent.parent / RELATIVE_LEAD_PATH
 
@@ -108,10 +106,8 @@ def save_lead_request(niche, location, max_count, user_name):
         'status': ['PENDING_SCRAPE']
     })
     
-    # Ensure the data/requests directory exists
     os.makedirs(REQUEST_QUEUE_PATH.parent, exist_ok=True)
     
-    # Append to the CSV
     if REQUEST_QUEUE_PATH.exists():
         new_request.to_csv(REQUEST_QUEUE_PATH, mode='a', header=False, index=False)
     else:
@@ -119,13 +115,23 @@ def save_lead_request(niche, location, max_count, user_name):
         
     return True
 
+def load_order_queue():
+    """Safely loads the order queue, returning an empty DataFrame if the file is missing."""
+    if not REQUEST_QUEUE_PATH.exists():
+        return pd.DataFrame(columns=['timestamp', 'niche', 'location', 'max_count', 'user_id', 'status'])
+    try:
+        return pd.read_csv(REQUEST_QUEUE_PATH)
+    except Exception as e:
+        # Note: If file exists but is empty/corrupted, this is the error handler.
+        # st.error(f"Error loading order queue: {e}") 
+        return pd.DataFrame(columns=['timestamp', 'niche', 'location', 'max_count', 'user_id', 'status'])
+
 
 @st.cache_data(ttl=600)
 def load_live_data():
     """Reads CSV from the pipeline and adds enrichment columns required by the UI."""
     
     if not PATHLIB_PATH.exists():
-        st.warning(f"Waiting for first pipeline run. No data found at: {PATHLIB_PATH}")
         return pd.DataFrame()
     
     try:
@@ -133,32 +139,29 @@ def load_live_data():
         if df.empty:
             return pd.DataFrame()
 
-        # --- ENRICHMENT LOGIC (Adds UI-required columns not in the raw CSV) ---
-        df.rename(columns={'name': 'Business Name', 'phone': 'Phone', 'email': 'Email', 'category': 'Niche'}, inplace=True)
-        
-        # Create UI-dependent columns (MOCK LOGIC)
-        # FIX: Remove the obsolete address parsing logic and rely on the City/Niche columns
-        # already created by the scraper.
+        # --- ENRICHMENT LOGIC (Uses columns from the clean CSV) ---
+        # The CSV has the correct headers now, so we just prep them for UI/filtering
         df['City'] = df['City'].fillna('N/A')
         df['Niche'] = df['Niche'].fillna('N/A')
         
-        # Now, create the 'city_state' column required by the filter from the clean City column:
+        # Create the 'city_state' column required by the filter
         df['city_state'] = df['City'].astype(str)
-        df['Reason to Contact'] = np.random.choice(['No Website', 'New Business in Your Area', 'High Conversion Potential'], size=len(df))
-        df['Attribute'] = df['Reason to Contact'].apply(lambda x: 'No Website' if 'Website' in x else 'New Businesses')
-
-        df['Lead Score'] = np.random.randint(65, 95, size=len(df))
-        df['Potential Deal'] = np.random.randint(300, 1500, size=len(df))
         
         # Apply Masking 
         is_premium = st.session_state.get('is_premium', False)
-        df['Phone'] = df.apply(lambda row: row['Phone'] if is_premium else mask_phone(row['Phone']), axis=1)
-        df['Email'] = df.apply(lambda row: row['Email'] if is_premium else mask_email(row['Email']), axis=1)
+        df['Phone'] = df.apply(lambda row: mask_phone(row['Phone']) if not is_premium else row['Phone'], axis=1)
+        df['Email'] = df.apply(lambda row: mask_email(row['Email']) if not is_premium else row['Email'], axis=1)
+        
+        # Ensure all columns required by the UI are present before returning
+        required_cols = ['Business Name', 'Phone', 'Email', 'City', 'Niche', 'Lead Score', 'Reason to Contact', 'Attribute']
+        if not all(col in df.columns for col in required_cols):
+             st.error("Data schema mismatch. Please run pipeline again.")
+             return pd.DataFrame()
         
         return df.sort_values(by='Lead Score', ascending=False).reset_index(drop=True)
 
     except Exception as e:
-        st.error(f"Error reading or processing live data: {e}")
+        st.error(f"Error reading or processing live data: '{e}'")
         return pd.DataFrame()
 
 
@@ -166,6 +169,7 @@ def load_live_data():
 # GLOBAL DATA LOAD (This runs once when the script starts)
 # --------------------------------------------------
 df_raw = load_live_data() 
+df_orders = load_order_queue()
 
 # Calculate KPIs from the live data
 leads_new_biz_count = len(df_raw[df_raw['Attribute'] == 'New Businesses']) if not df_raw.empty else 0
@@ -292,9 +296,9 @@ is_premium = st.session_state['is_premium']
 # APPLY FILTERS based on session state
 if is_premium:
     if st.session_state['filter_city'] != 'All': 
-        df_current_view = df_current_view[df_current_view['City'] == st.session_state['filter_city']]
+        df_current_view = df_current_view[df_current_view['City'].str.contains(st.session_state['filter_city'], case=False, na=False)]
     if st.session_state['filter_niche'] != 'All': 
-        df_current_view = df_current_view[df_current_view['Niche'] == st.session_state['filter_niche']]
+        df_current_view = df_current_view[df_current_view['Niche'].str.contains(st.session_state['filter_niche'], case=False, na=False)]
     if st.session_state['filter_score'] > 0: 
         df_current_view = df_current_view[df_current_view['Lead Score'] >= st.session_state['filter_score']]
     if st.session_state['filter_reason'] != 'All':
@@ -391,9 +395,12 @@ with main_content_cols[0]:
             }
         )
 
+# Order Status Tracker (Outside of main content to fix layout)
 st.markdown("## ⏳ My Order Status")
 
 # Logic to load order_queue.csv and filter by user
+df_orders = load_order_queue()
+
 if not df_orders.empty:
     df_my_orders = df_orders[df_orders['user_id'] == st.session_state['user']['name']].tail(3)
 
@@ -439,7 +446,6 @@ with main_content_cols[1]:
             st.button("Upgrade Now", key="upgrade_nudge", use_container_width=True, type="primary")
 
     # 9. REFERRAL ENGINE
-    st.markdown("<br>", unsafe_allow_html=True) 
     with st.container(border=True):
         st.markdown("📞 Earn Referral Bonuses")
         st.caption("Invite Friends & Earn Rewards")
