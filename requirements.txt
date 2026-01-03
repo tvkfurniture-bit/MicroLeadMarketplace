@@ -4,11 +4,17 @@ PyYAML
 
 # Web Interaction (Industrial Grade)
 playwright
-# Drivers for Playwright (must be installed via shell commands in GitHub Actions)
 
-# Database Connection
+# Database Connection (Keep for future migration)
 SQLAlchemy
 psycopg2-binary 
+
+# --- CRITICAL ADDITIONS FOR GOOGLE SHEETS API ---
+# Gspread is the Python library for Sheets
+gspread 
+# Oauth2client is the dependency for service account authentication
+oauth2client 
+# ------------------------------------------------
 
 # Dashboard
 streamlit
