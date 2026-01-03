@@ -169,6 +169,15 @@ def load_live_data():
 # GLOBAL DATA LOAD (This runs once when the script starts)
 # --------------------------------------------------
 df_raw = load_live_data() 
+# Rerun the masking logic, but save the unmasked versions as new columns:
+is_premium = st.session_state['is_premium']
+
+if is_premium:
+    # If premium, apply UNMASKING
+    df_raw['Phone'] = df_raw.apply(lambda row: row['Phone'].replace('*', ''), axis=1) # Simplified unmasking
+    df_raw['Email'] = df_raw.apply(lambda row: row['Email'].replace('*', ''), axis=1) # Simplified unmasking
+
+# If not premium, the data remains masked, which is the desired outcome.
 df_orders = load_order_queue()
 
 # Calculate KPIs from the live data
