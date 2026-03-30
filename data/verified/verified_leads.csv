@@ -1,19 +1,25 @@
 Business Name,Phone,Email,City,Niche,Lead Score,Reason to Contact,Attribute,source_url,scraped_date
-Hvac Lead 0,+1 314-776-6843,"test_lead_0@dallas,texas.com","Dallas, Texas",HVAC Services,79,High Conversion Potential,High Conversion,http://source.com/lead_0,2026-03-23 03:47:03
-Hvac Lead 1,+1 799-780-2354,"test_lead_1@dallas,texas.com","Dallas, Texas",HVAC Services,93,No Website,New Businesses,http://source.com/lead_1,2026-03-23 03:47:03
-Hvac Lead 2,+1 298-557-6737,"test_lead_2@dallas,texas.com","Dallas, Texas",HVAC Services,81,New Business in Your Area,No Website,http://source.com/lead_2,2026-03-23 03:47:03
-Hvac Lead 3,+1 858-234-9814,"test_lead_3@dallas,texas.com","Dallas, Texas",HVAC Services,91,No Website,No Website,http://source.com/lead_3,2026-03-23 03:47:03
-Hvac Lead 4,+1 473-422-2849,"test_lead_4@dallas,texas.com","Dallas, Texas",HVAC Services,79,High Conversion Potential,No Website,http://source.com/lead_4,2026-03-23 03:47:03
-Hvac Lead 5,+1 563-804-1365,"test_lead_5@dallas,texas.com","Dallas, Texas",HVAC Services,72,High Conversion Potential,High Conversion,http://source.com/lead_5,2026-03-23 03:47:03
-Hvac Lead 6,+1 575-987-8839,"test_lead_6@dallas,texas.com","Dallas, Texas",HVAC Services,69,No Website,High Conversion,http://source.com/lead_6,2026-03-23 03:47:03
-Hvac Lead 7,+1 363-260-2912,"test_lead_7@dallas,texas.com","Dallas, Texas",HVAC Services,65,No Website,New Businesses,http://source.com/lead_7,2026-03-23 03:47:03
-Hvac Lead 8,+1 764-373-4168,"test_lead_8@dallas,texas.com","Dallas, Texas",HVAC Services,74,New Business in Your Area,High Conversion,http://source.com/lead_8,2026-03-23 03:47:03
-Hvac Lead 9,+1 505-438-6996,"test_lead_9@dallas,texas.com","Dallas, Texas",HVAC Services,74,New Business in Your Area,High Conversion,http://source.com/lead_9,2026-03-23 03:47:03
-Hvac Lead 10,+1 489-303-5380,"test_lead_10@dallas,texas.com","Dallas, Texas",HVAC Services,83,New Business in Your Area,New Businesses,http://source.com/lead_10,2026-03-23 03:47:03
-Hvac Lead 11,+1 291-277-8435,"test_lead_11@dallas,texas.com","Dallas, Texas",HVAC Services,67,New Business in Your Area,No Website,http://source.com/lead_11,2026-03-23 03:47:03
-Hvac Lead 12,+1 131-857-8711,"test_lead_12@dallas,texas.com","Dallas, Texas",HVAC Services,83,New Business in Your Area,High Conversion,http://source.com/lead_12,2026-03-23 03:47:03
-Hvac Lead 13,+1 774-119-6267,"test_lead_13@dallas,texas.com","Dallas, Texas",HVAC Services,72,No Website,High Conversion,http://source.com/lead_13,2026-03-23 03:47:03
-Hvac Lead 14,+1 923-147-4344,"test_lead_14@dallas,texas.com","Dallas, Texas",HVAC Services,75,High Conversion Potential,No Website,http://source.com/lead_14,2026-03-23 03:47:03
-Hvac Lead 15,+1 791-939-7569,"test_lead_15@dallas,texas.com","Dallas, Texas",HVAC Services,93,High Conversion Potential,No Website,http://source.com/lead_15,2026-03-23 03:47:03
-Hvac Lead 16,+1 157-897-9102,"test_lead_16@dallas,texas.com","Dallas, Texas",HVAC Services,77,New Business in Your Area,New Businesses,http://source.com/lead_16,2026-03-23 03:47:03
-Hvac Lead 17,+1 319-113-6746,"test_lead_17@dallas,texas.com","Dallas, Texas",HVAC Services,67,No Website,High Conversion,http://source.com/lead_17,2026-03-23 03:47:03
+Hvac Lead 0,+1 109-680-5938,"test_lead_0@dallas,texas.com","Dallas, Texas",HVAC Services,82,No Website,High Conversion,http://source.com/lead_0,2026-03-30 04:11:11
+Hvac Lead 1,+1 408-913-4796,"test_lead_1@dallas,texas.com","Dallas, Texas",HVAC Services,79,New Business in Your Area,No Website,http://source.com/lead_1,2026-03-30 04:11:11
+Hvac Lead 2,+1 975-583-6717,"test_lead_2@dallas,texas.com","Dallas, Texas",HVAC Services,78,No Website,New Businesses,http://source.com/lead_2,2026-03-30 04:11:11
+Hvac Lead 3,+1 200-633-2007,"test_lead_3@dallas,texas.com","Dallas, Texas",HVAC Services,72,New Business in Your Area,New Businesses,http://source.com/lead_3,2026-03-30 04:11:11
+Hvac Lead 4,+1 165-114-4230,"test_lead_4@dallas,texas.com","Dallas, Texas",HVAC Services,88,No Website,New Businesses,http://source.com/lead_4,2026-03-30 04:11:11
+Hvac Lead 5,+1 905-632-1994,"test_lead_5@dallas,texas.com","Dallas, Texas",HVAC Services,75,New Business in Your Area,New Businesses,http://source.com/lead_5,2026-03-30 04:11:11
+Hvac Lead 6,+1 217-216-9505,"test_lead_6@dallas,texas.com","Dallas, Texas",HVAC Services,69,No Website,High Conversion,http://source.com/lead_6,2026-03-30 04:11:11
+Hvac Lead 7,+1 744-601-3594,"test_lead_7@dallas,texas.com","Dallas, Texas",HVAC Services,95,New Business in Your Area,New Businesses,http://source.com/lead_7,2026-03-30 04:11:11
+Hvac Lead 8,+1 898-325-6036,"test_lead_8@dallas,texas.com","Dallas, Texas",HVAC Services,90,High Conversion Potential,No Website,http://source.com/lead_8,2026-03-30 04:11:11
+Hvac Lead 9,+1 243-255-6777,"test_lead_9@dallas,texas.com","Dallas, Texas",HVAC Services,71,No Website,New Businesses,http://source.com/lead_9,2026-03-30 04:11:11
+Hvac Lead 10,+1 369-673-4132,"test_lead_10@dallas,texas.com","Dallas, Texas",HVAC Services,95,High Conversion Potential,No Website,http://source.com/lead_10,2026-03-30 04:11:11
+Hvac Lead 11,+1 380-224-2548,"test_lead_11@dallas,texas.com","Dallas, Texas",HVAC Services,77,High Conversion Potential,New Businesses,http://source.com/lead_11,2026-03-30 04:11:11
+Hvac Lead 12,+1 499-581-3648,"test_lead_12@dallas,texas.com","Dallas, Texas",HVAC Services,92,No Website,High Conversion,http://source.com/lead_12,2026-03-30 04:11:11
+Hvac Lead 13,+1 508-871-5835,"test_lead_13@dallas,texas.com","Dallas, Texas",HVAC Services,89,High Conversion Potential,No Website,http://source.com/lead_13,2026-03-30 04:11:11
+Hvac Lead 14,+1 622-795-7722,"test_lead_14@dallas,texas.com","Dallas, Texas",HVAC Services,91,New Business in Your Area,No Website,http://source.com/lead_14,2026-03-30 04:11:11
+Hvac Lead 15,+1 957-596-4588,"test_lead_15@dallas,texas.com","Dallas, Texas",HVAC Services,93,No Website,High Conversion,http://source.com/lead_15,2026-03-30 04:11:11
+Hvac Lead 16,+1 978-978-9986,"test_lead_16@dallas,texas.com","Dallas, Texas",HVAC Services,70,New Business in Your Area,New Businesses,http://source.com/lead_16,2026-03-30 04:11:11
+Hvac Lead 17,+1 706-667-2184,"test_lead_17@dallas,texas.com","Dallas, Texas",HVAC Services,74,No Website,New Businesses,http://source.com/lead_17,2026-03-30 04:11:11
+Hvac Lead 18,+1 359-178-5946,"test_lead_18@dallas,texas.com","Dallas, Texas",HVAC Services,84,High Conversion Potential,New Businesses,http://source.com/lead_18,2026-03-30 04:11:11
+Hvac Lead 19,+1 753-805-5512,"test_lead_19@dallas,texas.com","Dallas, Texas",HVAC Services,71,No Website,High Conversion,http://source.com/lead_19,2026-03-30 04:11:11
+Hvac Lead 20,+1 669-361-5056,"test_lead_20@dallas,texas.com","Dallas, Texas",HVAC Services,90,New Business in Your Area,New Businesses,http://source.com/lead_20,2026-03-30 04:11:11
+Hvac Lead 21,+1 874-184-8158,"test_lead_21@dallas,texas.com","Dallas, Texas",HVAC Services,84,No Website,No Website,http://source.com/lead_21,2026-03-30 04:11:11
+Hvac Lead 22,+1 183-262-2858,"test_lead_22@dallas,texas.com","Dallas, Texas",HVAC Services,69,No Website,New Businesses,http://source.com/lead_22,2026-03-30 04:11:11
+Hvac Lead 23,+1 299-916-9100,"test_lead_23@dallas,texas.com","Dallas, Texas",HVAC Services,78,High Conversion Potential,No Website,http://source.com/lead_23,2026-03-30 04:11:11
